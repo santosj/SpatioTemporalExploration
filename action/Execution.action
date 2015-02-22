@@ -1,0 +1,11 @@
+# Define the goal
+geometry_msgs/PoseArray locations
+int64 t
+---
+# Define the result
+float32 information
+---
+# Define a feedback message
+string current_goal
+float32 time_remaining
+

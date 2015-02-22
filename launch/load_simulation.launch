@@ -1,0 +1,6 @@
+<launch>
+	<node pkg="fremen" type="load_fremenGrid.py" name="load_grid" output="screen">
+		<param name="filename" value="/home/santos/teste" />
+	</node>
+	
+</launch>
