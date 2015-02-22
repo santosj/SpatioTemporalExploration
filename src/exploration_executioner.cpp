@@ -53,7 +53,7 @@ void movePtu(float pan,float tilt)
 void ptuCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
     float pan,tilt;
-    for (int i = 0;i<3;i++){
+    for (int i = 0;i<2;i++){
         if (msg->name[i] == "pan") pan = msg->position[i];
         if (msg->name[i] == "tilt") tilt = msg->position[i];
     }
