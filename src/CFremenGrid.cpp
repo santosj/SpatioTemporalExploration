@@ -4,9 +4,11 @@ using namespace std;
 
 CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int dimY,int dimZ,float cellSize)
 {
+	obtainedInformation = 0;
 	minProb = 0.05;
 	maxProb = 1-minProb;
-	residualEntropy = minProb*log2f(minProb);
+	residualEntropy = minProb*log2f(minProb)+(maxProb)*log2f(maxProb);
+	residualInformation = log2f(maxProb);
 	debug = false;
 	oX = originX;
 	oY = originY;
@@ -18,6 +20,7 @@ CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int 
 	numCells = xDim*yDim*zDim;
 	aux = (char*) malloc(numCells*sizeof(char));
 	probs = (float*) malloc(numCells*sizeof(float));
+	frelements = (CFrelement*) malloc(numCells*sizeof(CFrelement));
 	for (int i = 0;i<numCells;i++) probs[i] = 0.5;
 
 	//initialize the grid 'walls'
@@ -68,6 +71,7 @@ CFremenGrid::~CFremenGrid()
 	free(raycasters);
 	free(aux);
 	free(probs);
+	free(frelements);
 	//for (int i=0;i<numCells;i++) free(cellArray[i]);
 	//free(cellArray);
 
@@ -83,7 +87,7 @@ int CFremenGrid::getIndex(float x,float  y,float  z)
 	return 0;
 }
 
-float CFremenGrid::getInformation(float sx,float sy,float sz,float range,float timeStamp)
+float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,uint32_t timestamp)
 {
 	CTimer timer;
 	timer.reset();
@@ -276,7 +280,7 @@ float CFremenGrid::getInformation(float sx,float sy,float sz,float range,float t
 			cellFree = prob < 0.7;
 			if (aux[cellIndex] == 0){
 				aux[cellIndex] = 1;
-                entropy-=fmin(prob*log2f(prob)-residualEntropy,0);
+				entropy-=fmin(prob*log2f(prob)+(1-prob)*log2f(1-prob)-residualEntropy,0);
 			}
 		}
 		//aux[cellIndex] = 2;
@@ -286,8 +290,8 @@ float CFremenGrid::getInformation(float sx,float sy,float sz,float range,float t
 	return entropy;
 }
 
-//ultrafast grid update 
-void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size)
+//fast grid update 
+void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint32_t timestamp)
 {
 	CTimer timer;
 	timer.reset();
@@ -300,7 +304,12 @@ void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size)
 	float maxRange = 4.0;
 
 	memset(aux,0,numCells*sizeof(char));
-
+	uint32_t times[1];
+	unsigned char oneVal[1];
+	unsigned char zeroVal[1];
+	oneVal[0] = 1;
+	zeroVal[0] = 0;
+	times[0] = timestamp;
 	int processed=0;
 	//rescale ray intersections to match the grid
 	if (subsample == false){
@@ -322,7 +331,12 @@ void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size)
 			final = (int)x[i]+xDim*((int)y[i]+yDim*((int)z[i]));
 			if (aux[final] != 1){
 				aux[final] = 1;
-				if (d[i]==1) probs[final] = maxProb; //else probs[final] = minProb;
+				if (d[i]==1)
+				{
+					obtainedInformation += (log2f(probs[final])-residualInformation);
+				       	frelements[final].add(times,oneVal,1);	
+					probs[final] = maxProb; //else probs[final] = minProb;
+				}
 				process[i] = 1;
 				processed++;
 			}
@@ -398,7 +412,9 @@ void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size)
 				//if (debug) printf("Index %06i %06i %06i %.2f %.2f %.2f %.2f\n",index,final,startIndex,bx,bx*rx+px,by*ry+py,bz*rz+pz);
 				if (aux[index] == 0){
 					aux[index] = 1;
+					obtainedInformation += log2f(1-probs[index])-residualInformation;
 					probs[index] = minProb;
+				       	frelements[final].add(times,zeroVal,1);	
 				}
 				if (bx < by && bx < bz)
 				{
@@ -480,13 +496,17 @@ void CFremenGrid::print(bool verbose)
 	}*/
 }
 
-float CFremenGrid::estimate(unsigned int index,float timeStamp)
+bool CFremenGrid::recalculate(uint32_t timestamp)
+{
+	for (int i =0;i<numCells;i++) probs[i] = frelements[i].estimate(timestamp,2);
+}
+
+float CFremenGrid::getObtainedInformation()
+{
+	return obtainedInformation;
+}
+
+float CFremenGrid::estimate(unsigned int index,uint32_t timeStamp)
 {
 	return probs[index];
 }
-
-float CFremenGrid::estimate(float x,float y,float z,float t)
-{
-
-}
-

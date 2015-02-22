@@ -6,6 +6,7 @@
 #include <math.h>
 #include <string.h>
 #include "CTimer.h" 
+#include "CFrelement.h" 
 
 /**
 @author Tom Krajnik
@@ -19,17 +20,20 @@ class CFremenGrid
 		CFremenGrid(float originX,float originY,float originZ,int dimX,int dimY,int dimZ,float cellSize);
 		~CFremenGrid();
 
-		/*state estimation: estimates the state of the i-th element*/
-		float estimate(float x,float y,float z,float timeStamp);
-		float getInformation(float x,float y,float z,float range,float timeStamp);
+		/*state estimation: estimates the grid for the given time*/
+		bool recalculate(uint32_t timeStamp);
+		float getObtainedInformation();
+
+		float estimate(float x,float y,float z,uint32_t timeStamp);
+		float estimateInformation(float x,float y,float z,float range,uint32_t t);
 
 		/*changes the model order*/
 		void print(bool verbose);
 		void save(const char*name,bool lossy = false,int forceOrder = -1);
 		bool load(const char*name);
 
-		float estimate(unsigned int index,float timeStamp);
-		void incorporate(float *x,float *y,float *z,float *d,int size);
+		float estimate(unsigned int index,uint32_t timeStamp);
+		void incorporate(float *x,float *y,float *z,float *d,int size,uint32_t t);
 		int getIndex(float x,float y,float z);
 
 		//center of the first cell
@@ -43,10 +47,12 @@ class CFremenGrid
 		int numCells;
 		bool debug;
 
-		float minProb,maxProb,residualEntropy;
+		float minProb,maxProb,residualEntropy,residualInformation;
 		float lastPhiRange,lastPsiMin,lastPsiMax,lastRange;
 		int *raycasters;
 		int numRaycasters;
+		float obtainedInformation;
+		CFrelement* frelements;
 };
 
 #endif

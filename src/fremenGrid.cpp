@@ -156,7 +156,7 @@ void points(const sensor_msgs::PointCloud2ConstPtr& points2)
 		z[last] = st.getOrigin().z();
 		printf("Point cloud processed %i \n",timer.getTime());
 		timer.reset();	
-		grid->incorporate(x,y,z,d,last);
+		grid->incorporate(x,y,z,d,last,points2->header.stamp.sec);
 		printf("Grid updated %i \n",timer.getTime());	
 		integrateMeasurements--;
 	}
@@ -185,7 +185,7 @@ bool addDepth(fremen::AddView::Request  &req, fremen::AddView::Response &res)
 
 bool estimateEntropy(fremen::Entropy::Request  &req, fremen::Entropy::Response &res)
 {
-	res.value = grid->getInformation(req.x,req.y,req.z,req.r,req.t);
+	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
 	return true;
 }
 
@@ -321,7 +321,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 			}
 		}
 		printf("Depth image to point cloud took %i ms,",timer.getTime());
-		grid->incorporate(x,y,z,d,len);
+		grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
 		//printf("Grid updated %i \n",timer.getTime());	
 		integrateMeasurements=0;
 		//printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);

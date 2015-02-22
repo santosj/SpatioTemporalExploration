@@ -8,11 +8,11 @@
 #include <actionlib/server/simple_action_server.h>
 #include <actionlib/client/simple_action_client.h>
 
-#include <fremen/ExecutionAction.h>
+#include <spatiotemporalexploration/ExecutionAction.h>
 #include <strands_navigation_msgs/MonitoredNavigationAction.h>
 
-#include "fremen/AddView.h"
-#include "fremen/Visualize.h"
+#include "spatiotemporalexploration/AddView.h"
+#include "spatiotemporalexploration/Visualize.h"
 
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
@@ -29,12 +29,12 @@ bool saveFlag = false;
 
 ros::Publisher ptu_pub;
 sensor_msgs::JointState ptu;
-fremen::AddView measure_srv;
-fremen::Visualize visualize_srv;
+spatiotemporalexploration::AddView measure_srv;
+spatiotemporalexploration::Visualize visualize_srv;
 
 ros::ServiceClient *measure_client_ptr, *visualize_client_ptr;
 
-typedef actionlib::SimpleActionServer<fremen::ExecutionAction> Server;
+typedef actionlib::SimpleActionServer<spatiotemporalexploration::ExecutionAction> Server;
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> *ac_nav_ptr;
@@ -61,7 +61,7 @@ void ptuCallback(const sensor_msgs::JointState::ConstPtr &msg)
     if (fabs(pan-ptu.position[0])<0.01 && fabs(tilt-ptu.position[1])<0.01) ptuMovementFinished++;
 }
 
-void execute(const fremen::ExecutionGoalConstPtr& goal, Server* as)
+void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Server* as)
 {
 
     ROS_INFO("received new plan");
@@ -72,7 +72,7 @@ void execute(const fremen::ExecutionGoalConstPtr& goal, Server* as)
     current_goal.action_server = "move_base";
     current_goal.target_pose.header.frame_id = "map";
 
-    fremen::ExecutionFeedback feedback;
+    spatiotemporalexploration::ExecutionFeedback feedback;
 
     sleep(1);
 
@@ -188,12 +188,12 @@ int main(int argc,char *argv[])
     ptu_pub = n.advertise<sensor_msgs::JointState>("/ptu/cmd", 10);
 
     //measure service client
-    ros::ServiceClient measure_client = n.serviceClient<fremen::AddView>("/fremenGrid/depth");
+    ros::ServiceClient measure_client = n.serviceClient<spatiotemporalexploration::AddView>("/fremenGrid/depth");
     measure_client_ptr = &measure_client;
 
 
     //vizualize client
-    ros::ServiceClient visualize_client = n.serviceClient<fremen::Visualize>("/fremenGrid/visualize");
+    ros::ServiceClient visualize_client = n.serviceClient<spatiotemporalexploration::Visualize>("/fremenGrid/visualize");
     visualize_client_ptr = &visualize_client;
 
     //Dynamic Reconfigure
