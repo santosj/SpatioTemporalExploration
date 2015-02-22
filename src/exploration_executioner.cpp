@@ -192,6 +192,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         ROS_INFO("undocking failed!");
     }
 
+    as->setSucceeded();
+
 
 }
 
