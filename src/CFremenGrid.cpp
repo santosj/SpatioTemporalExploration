@@ -448,7 +448,7 @@ void CFremenGrid::save(const char* filename,bool lossy,int forceOrder)
 	fwrite(&oZ,sizeof(float),1,f);
 	fwrite(&resolution,sizeof(float),1,f);
 	fwrite(probs,sizeof(float),numCells,f);
-//	for (int i=0;i<numCells;i++) cellArray[i]->save(f,lossy,forceOrder);
+	for (int i=0;i<numCells;i++) frelements[i].save(f,false);
 	fclose(f);
 }
 
@@ -474,6 +474,7 @@ bool CFremenGrid::load(const char* filename)
 	ret = fread(&resolution,sizeof(float),1,f);
 	numCells = xDim*yDim*zDim;
 	ret = fread(probs,sizeof(float),numCells,f);
+	for (int i=0;i<numCells;i++) frelements[i].load(f);
 	/*cellArray = (CFrelement**) malloc(numCells*sizeof(CFrelement*));
 	for (int i=0;i<numCells;i++) cellArray[i] = new CFrelement();
 	for (int i=0;i<numCells;i++){
