@@ -21,6 +21,9 @@ typedef struct{
 	float imagStates;
 	float realBalance;
 	float imagBalance;
+}SFrelementFull;
+
+typedef struct{
 	float amplitude;
 	float phase;
 	float period;	
@@ -57,11 +60,13 @@ class CFrelement
 		int save(char* name,bool lossy = false);
 		int load(char* name);
 		
+		SFrelementFull allFrelements[NUM_PERIODICITIES];
+		SFrelement frelements[MAX_ADAPTIVE_ORDER];
+
 		float gain;
-		SFrelement frelements[NUM_PERIODICITIES];
 		int measurements,order;
-		int64_t firstTime;
-		int64_t  lastTime;
+		uint32_t firstTime;
+		uint32_t  lastTime;
 };
 
 #endif

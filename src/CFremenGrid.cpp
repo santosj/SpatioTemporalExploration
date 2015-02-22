@@ -87,6 +87,45 @@ int CFremenGrid::getIndex(float x,float  y,float  z)
 	return 0;
 }
 
+float CFremenGrid::getClosestObstacle(float xp,float yp,float zt,float range)
+{
+	float rangeLimit=(range/resolution);
+	float minRange=range*range;
+	int xStart = (int)((xp-oX-range)/resolution);
+	int xEnd   = (int)((xp-oX+range)/resolution);
+	int yStart = (int)((yp-oY-range)/resolution);
+	int yEnd   = (int)((yp-oY+range)/resolution);
+	int zStart = (int)((0.2-oZ-range)/resolution);
+	int zEnd   = (int)((2.0-oY+range)/resolution);
+	int xM = (int)((xp-oX)/resolution);
+	int yM = (int)((yp-oY)/resolution);
+	xM = fmax(fmin(xM,xDim-1),0);
+	yM = fmax(fmin(yM,yDim-1),0);
+	xStart = fmax(fmin(xStart,xDim-1),0);
+	xEnd   = fmax(fmin(xEnd,xDim-1),0);
+	yStart = fmax(fmin(yStart,yDim-1),0);
+	yEnd   = fmax(fmin(yEnd,yDim-1),0);
+	zStart = fmax(fmin(zStart,zDim-1),0);
+	zEnd   = fmax(fmin(zEnd,zDim-1),0);
+
+	int cellIndex=0;
+	for (int z = zStart;z<zEnd;z++)
+	{
+		for (int y = yStart;y<yEnd;y++)
+		{
+			cellIndex = xDim*(y+yDim*z);
+			for (int x = xStart;x<xEnd;x++)
+			{
+				if (probs[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
+				{
+					minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
+				}
+			}	
+		}
+	}
+	return sqrt(minRange);
+}
+
 float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,uint32_t timestamp)
 {
 	CTimer timer;
@@ -447,8 +486,9 @@ void CFremenGrid::save(const char* filename,bool lossy,int forceOrder)
 	fwrite(&oY,sizeof(float),1,f);
 	fwrite(&oZ,sizeof(float),1,f);
 	fwrite(&resolution,sizeof(float),1,f);
+	fwrite(&obtainedInformation,sizeof(float),1,f);
 	fwrite(probs,sizeof(float),numCells,f);
-//	for (int i=0;i<numCells;i++) cellArray[i]->save(f,lossy,forceOrder);
+	for (int i=0;i<numCells;i++) frelements[i].save(f,false);
 	fclose(f);
 }
 
@@ -472,8 +512,10 @@ bool CFremenGrid::load(const char* filename)
 	ret = fread(&oY,sizeof(float),1,f);
 	ret = fread(&oZ,sizeof(float),1,f);
 	ret = fread(&resolution,sizeof(float),1,f);
+	ret = fread(&obtainedInformation,sizeof(float),1,f);
 	numCells = xDim*yDim*zDim;
 	ret = fread(probs,sizeof(float),numCells,f);
+	for (int i=0;i<numCells;i++) frelements[i].load(f);
 	/*cellArray = (CFrelement**) malloc(numCells*sizeof(CFrelement*));
 	for (int i=0;i<numCells;i++) cellArray[i] = new CFrelement();
 	for (int i=0;i<numCells;i++){
