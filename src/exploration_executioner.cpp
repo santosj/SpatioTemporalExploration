@@ -89,11 +89,11 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     {
 
 
-//        char cr_goal[10];
-//        sprintf(cr_goal, "%d/%d", i, n);
-//        feedback.current_goal = cr_goal;
-//        feedback.time_remaining = 0;//TODO
-//        as->publishFeedback(feedback);
+        char cr_goal[10];
+        sprintf(cr_goal, "%d/%d", i, n);
+        feedback.current_goal = cr_goal;
+        feedback.time_remaining = 0;//TODO
+        as->publishFeedback(feedback);
 
 
         current_goal.target_pose.pose = goal->locations.poses[i];
