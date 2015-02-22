@@ -1,3 +1,4 @@
 float64 stamp
 ---
-bool result
+bool  	result
+float64   information

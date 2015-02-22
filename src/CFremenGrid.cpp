@@ -330,7 +330,7 @@ float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,ui
 }
 
 //fast grid update 
-void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint32_t timestamp)
+float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint32_t timestamp)
 {
 	CTimer timer;
 	timer.reset();
@@ -474,6 +474,7 @@ void CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint3
 		}
 	}
 	printf("preparation %i ms and update of %i cells took %i ms.\n",prepare,cells,calculate);
+	return obtainedInformation;
 } 
 
 void CFremenGrid::save(const char* filename,bool lossy,int forceOrder)

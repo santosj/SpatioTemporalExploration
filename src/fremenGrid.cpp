@@ -173,6 +173,7 @@ bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalex
 {
 	integrateMeasurements = 2;
 	res.result = true;
+	res.information = grid->getObtainedInformation();
 	return true;
 }
 
@@ -180,6 +181,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 {
 	integrateMeasurements = 3;
 	res.result = true;
+	res.information = grid->getObtainedInformation();
 	return true;
 }
 
