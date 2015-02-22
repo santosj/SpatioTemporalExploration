@@ -19,6 +19,8 @@ public:
     void solve(int iterations);
     void print();
     void save(const char* name);
+    float *x;
+    float *y;
 
 private:
     /*reverse part of the circuit (from the a-th to the b-th node)*/
@@ -38,8 +40,7 @@ private:
     /*get path length*/
     float getLength();
 
-    float *x;
-    float *y;
+
     int len;
     bool debug;
 };
