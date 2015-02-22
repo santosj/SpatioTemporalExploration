@@ -186,6 +186,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 bool estimateEntropy(spatiotemporalexploration::Entropy::Request  &req, spatiotemporalexploration::Entropy::Response &res)
 {
 	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
+	res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,1.0);
 	return true;
 }
 

@@ -26,6 +26,7 @@ class CFremenGrid
 
 		float estimate(float x,float y,float z,uint32_t timeStamp);
 		float estimateInformation(float x,float y,float z,float range,uint32_t t);
+		float getClosestObstacle(float x,float y,float zlimit,float range);
 
 		/*changes the model order*/
 		void print(bool verbose);

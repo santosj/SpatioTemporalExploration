@@ -5,3 +5,4 @@ float64 r
 int64 t 
 ---
 float64 value
+float64 obstacle
