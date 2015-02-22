@@ -12,8 +12,8 @@ int fremenSort(const void* i,const void* j)
 CFrelement::CFrelement()
 {
 	//initialization of the frequency set
-	for (int i=0;i<NUM_PERIODICITIES;i++) frelements[i].amplitude = frelements[i].phase = 0; 
-	for (int i=0;i<NUM_PERIODICITIES;i++) frelements[i].period = (24*3600)/(i+1); 
+	//for (int i=0;i<MAX_ADAPTIVE_ORDER;i++) frelements[i].amplitude = frelements[i].phase = 0; 
+	//for (int i=0;i<NUM_PERIODICITIES;i++) frelements[i].period = (24*3600)/(i+1); 
 	gain = 0.5;
 	order = 0;
 	firstTime = -1;
@@ -31,8 +31,8 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	if (measurements == 0 && length > 0)
 	{
 		for (int i = 0;i<NUM_PERIODICITIES;i++){
-			frelements[i].realStates = 0;
-			frelements[i].imagStates = 0;
+			allFrelements[i].realStates = 0;
+			allFrelements[i].imagStates = 0;
 		}
 		firstTime = times[0];
 	}
@@ -48,6 +48,9 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	//verify if there is an actual update
 	if (numUpdated <= 0)return numUpdated;
 
+	SFrelement tmp[NUM_PERIODICITIES];
+	for (int i=0;i<NUM_PERIODICITIES;i++) tmp[i].period = (24*3600)/(i+1); 
+
 	//update the gains accordingly 
 	float oldGain=0;
 	float newGain=0;
@@ -58,14 +61,14 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	if (oldGain > 0){
 		for (int i = 0;i<NUM_PERIODICITIES;i++)
 		{
-			frelements[i].realBalance  = gain*frelements[i].realBalance/oldGain;
-			frelements[i].imagBalance  = gain*frelements[i].imagBalance/oldGain;
+			allFrelements[i].realBalance  = gain*allFrelements[i].realBalance/oldGain;
+			allFrelements[i].imagBalance  = gain*allFrelements[i].imagBalance/oldGain;
 		}
 	}else{
 		for (int i = 0;i<NUM_PERIODICITIES;i++)
 		{
-			frelements[i].realBalance  = 0;
-			frelements[i].imagBalance  = 0;
+			allFrelements[i].realBalance  = 0;
+			allFrelements[i].imagBalance  = 0;
 		}
 	}
 
@@ -76,11 +79,11 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	{
 		for (int i = 0;i<NUM_PERIODICITIES;i++)
 		{
-			angle = 2*M_PI*(float)times[j]/frelements[i].period;
-			frelements[i].realStates   += states[j]*cos(angle);
-			frelements[i].imagStates   += states[j]*sin(angle);
-			frelements[i].realBalance  += gain*cos(angle);
-			frelements[i].imagBalance  += gain*sin(angle);
+			angle = 2*M_PI*(float)times[j]/tmp[i].period;
+			allFrelements[i].realStates   += states[j]*cos(angle);
+			allFrelements[i].imagStates   += states[j]*sin(angle);
+			allFrelements[i].realBalance  += gain*cos(angle);
+			allFrelements[i].imagBalance  += gain*sin(angle);
 		}
 	}
 	measurements+=length;
@@ -89,17 +92,19 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	float re,im;
 	for (int i = 0;i<NUM_PERIODICITIES;i++)
 	{
-		re = frelements[i].realStates-frelements[i].realBalance;
-		im = frelements[i].imagStates-frelements[i].imagBalance;
-		if (1.5*frelements[i].period <= duration) frelements[i].amplitude = sqrt(re*re+im*im)/measurements; else frelements[i].amplitude = 0;
-		if (frelements[i].amplitude < FREMEN_AMPLITUDE_THRESHOLD) frelements[i].amplitude = 0;
+		re = allFrelements[i].realStates-allFrelements[i].realBalance;
+		im = allFrelements[i].imagStates-allFrelements[i].imagBalance;
+		if (1.5*tmp[i].period <= duration) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0;
+		if (tmp[i].amplitude < FREMEN_AMPLITUDE_THRESHOLD) tmp[i].amplitude = 0;
 		//frelements[i].amplitude = sqrt(re*re+im*im)/measurements;
-		frelements[i].phase = atan2(im,re);
+		tmp[i].phase = atan2(im,re);
 	}
 
 	//sort the spectral components
-	qsort(frelements,NUM_PERIODICITIES,sizeof(SFrelement),fremenSort);
+	qsort(tmp,NUM_PERIODICITIES,sizeof(SFrelement),fremenSort);
 
+	//put them in the set P
+	memcpy(frelements,tmp,MAX_ADAPTIVE_ORDER*sizeof(SFrelement));
 	return numUpdated; 
 }
 
@@ -221,7 +226,10 @@ int CFrelement::save(FILE* file,bool lossy)
 	int frk = NUM_PERIODICITIES;
 	fwrite(&frk,sizeof(uint32_t),1,file);
 	fwrite(&gain,sizeof(float),1,file);
-	fwrite(frelements,sizeof(SFrelement),NUM_PERIODICITIES,file);
+	fwrite(&measurements,sizeof(int),1,file);
+	fwrite(&firstTime,sizeof(uint32_t),1,file);
+	fwrite(&lastTime,sizeof(uint32_t),1,file);
+	fwrite(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
 	return 0;
 }
 
@@ -230,7 +238,10 @@ int CFrelement::load(FILE* file)
 	int frk = NUM_PERIODICITIES;
 	fwrite(&frk,sizeof(uint32_t),1,file);
 	fwrite(&gain,sizeof(float),1,file);
-	fwrite(frelements,sizeof(SFrelement),NUM_PERIODICITIES,file);
+	fwrite(&measurements,sizeof(int),1,file);
+	fwrite(&firstTime,sizeof(uint32_t),1,file);
+	fwrite(&lastTime,sizeof(uint32_t),1,file);
+	fwrite(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
 	return 0;
 }
 
