@@ -5,7 +5,7 @@
 #include <geometry_msgs/Point.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
-#include "fremen/Entropy.h"
+#include "spatiotemporalexploration/Entropy.h"
 
 
 #define MIN_X  -5.8
@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
     nh.param("interval", entropy_step, 1.0);
 
     //Entropy Service Client
-    ros::ServiceClient entropy_client = n.serviceClient<fremen::Entropy>("/fremenGrid/entropy");
-    fremen::Entropy entropy_srv;
+    ros::ServiceClient entropy_client = n.serviceClient<spatiotemporalexploration::Entropy>("/fremenGrid/entropy");
+    spatiotemporalexploration::Entropy entropy_srv;
 
     //Publisher (Visualization of Points + Entropy Values)
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_points", 100);

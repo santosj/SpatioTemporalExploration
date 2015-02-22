@@ -15,10 +15,10 @@
 #include "CFremenGrid.h"
 #include "CTimer.h"
 
-#include "fremen/Entropy.h"
-#include "fremen/SaveLoad.h"
-#include "fremen/AddView.h"
-#include "fremen/Visualize.h"
+#include "spatiotemporalexploration/Entropy.h"
+#include "spatiotemporalexploration/SaveLoad.h"
+#include "spatiotemporalexploration/AddView.h"
+#include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
 

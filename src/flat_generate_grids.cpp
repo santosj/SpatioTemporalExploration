@@ -14,9 +14,9 @@
 #include <netdb.h>
 
 
-#include "fremen/AddView.h"
-#include "fremen/Visualize.h"
-#include "fremen/SaveLoad.h"
+#include "spatiotemporalexploration/AddView.h"
+#include "spatiotemporalexploration/Visualize.h"
+#include "spatiotemporalexploration/SaveLoad.h"
 
 
 float x_human[] = {4.0,1.8,-1.5,-2.5,1.8,2.5,5.4,5.2,5.0,0.0};
@@ -91,16 +91,16 @@ int main(int argc,char *argv[])
 
 
     //vizualize client
-    ros::ServiceClient visualize_client = n.serviceClient<fremen::Visualize>("/fremenGrid/visualize");
-    fremen::Visualize visualize_srv;
+    ros::ServiceClient visualize_client = n.serviceClient<spatiotemporalexploration::Visualize>("/spatiotemporalexplorationGrid/visualize");
+    spatiotemporalexploration::Visualize visualize_srv;
 
     //save grid service client
-    ros::ServiceClient save_client = n.serviceClient<fremen::SaveLoad>("/fremenGrid/save");
-    fremen::SaveLoad save_srv;
+    ros::ServiceClient save_client = n.serviceClient<spatiotemporalexploration::SaveLoad>("/spatiotemporalexplorationGrid/save");
+    spatiotemporalexploration::SaveLoad save_srv;
 
     //measure service client
-    ros::ServiceClient measure_client = n.serviceClient<fremen::AddView>("/fremenGrid/depth");
-    fremen::AddView measure_srv;
+    ros::ServiceClient measure_client = n.serviceClient<spatiotemporalexploration::AddView>("/spatiotemporalexplorationGrid/depth");
+    spatiotemporalexploration::AddView measure_srv;
 
     geometry_msgs::PoseWithCovarianceStamped initialPose;
     initialPose.header.frame_id = "map";

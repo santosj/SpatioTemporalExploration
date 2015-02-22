@@ -8,10 +8,10 @@
 
 #include <fstream>
 
-#include "fremen/Entropy.h"
-#include "fremen/AddView.h"
-#include "fremen/Visualize.h"
-#include "fremen/SaveLoad.h"
+#include "spatiotemporalexploration/Entropy.h"
+#include "spatiotemporalexploration/AddView.h"
+#include "spatiotemporalexploration/Visualize.h"
+#include "spatiotemporalexploration/SaveLoad.h"
 #include "nav_msgs/GetPlan.h"
 
 #include <dynamic_reconfigure/DoubleParameter.h>
@@ -98,7 +98,7 @@ void ptuCallback(const sensor_msgs::JointState::ConstPtr &msg)
     if (fabs(pan-ptu.position[0])<0.01 && fabs(tilt-ptu.position[1])<0.01) ptuMovementFinished++;
 }
 
-bool saveExploration(fremen::SaveLoad::Request  &req, fremen::SaveLoad::Response &res)
+bool saveExploration(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
     ROS_INFO("Saving Simulation!");
 
@@ -145,7 +145,7 @@ bool saveExploration(fremen::SaveLoad::Request  &req, fremen::SaveLoad::Response
     pose_file.close();
 
     //call service to save grid!
-    fremen::SaveLoad save_srv;
+    spatiotemporalexploration::SaveLoad save_srv;
     save_srv.request.filename = save_grid;
     save_srv.request.lossy = req.lossy;
     save_srv.request.order = req.order;
@@ -217,21 +217,21 @@ int main(int argc,char *argv[])
     ros::ServiceServer save_service = n.advertiseService("/fremenExploration/save", saveExploration);
 
     //entropy service client
-    ros::ServiceClient entropy_client = n.serviceClient<fremen::Entropy>("/fremenGrid/entropy");
-    fremen::Entropy entropy_srv;
+    ros::ServiceClient entropy_client = n.serviceClient<spatiotemporalexploration::Entropy>("/fremenGrid/entropy");
+    spatiotemporalexploration::Entropy entropy_srv;
 
     //vizualize client
-    ros::ServiceClient visualize_client = n.serviceClient<fremen::Visualize>("/fremenGrid/visualize");
-    fremen::Visualize visualize_srv;
+    ros::ServiceClient visualize_client = n.serviceClient<spatiotemporalexploration::Visualize>("/fremenGrid/visualize");
+    spatiotemporalexploration::Visualize visualize_srv;
 
     //save grid service client
-    ros::ServiceClient save_client = n.serviceClient<fremen::SaveLoad>("/fremenGrid/save");
+    ros::ServiceClient save_client = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
     save_client_ptr = &save_client;
 
 
     //measure service client
-    ros::ServiceClient measure_client = n.serviceClient<fremen::AddView>("/fremenGrid/depth");
-    fremen::AddView measure_srv;
+    ros::ServiceClient measure_client = n.serviceClient<spatiotemporalexploration::AddView>("/fremenGrid/depth");
+    spatiotemporalexploration::AddView measure_srv;
 
     //plan service client
     ros::ServiceClient plan_client = n.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");

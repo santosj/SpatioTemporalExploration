@@ -14,10 +14,10 @@
 #include "CFremenGrid.h"
 #include "CTimer.h"
 
-#include "fremen/Entropy.h"
-#include "fremen/SaveLoad.h"
-#include "fremen/AddView.h"
-#include "fremen/Visualize.h"
+#include "spatiotemporalexploration/Entropy.h"
+#include "spatiotemporalexploration/SaveLoad.h"
+#include "spatiotemporalexploration/AddView.h"
+#include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
 #define FLAT_BIG
@@ -100,7 +100,7 @@ tf::TransformListener *tf_listener;
 ros::Publisher *octomap_pub_ptr, *estimate_pub_ptr,*clock_pub_ptr;
 ros::Publisher retrieve_publisher;
  
-bool loadGrid(fremen::SaveLoad::Request  &req, fremen::SaveLoad::Response &res)
+bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
     grid->load(req.filename.c_str());
     ROS_INFO("3D Grid of %ix%ix%i loaded !",grid->xDim,grid->yDim,grid->zDim);
@@ -108,7 +108,7 @@ bool loadGrid(fremen::SaveLoad::Request  &req, fremen::SaveLoad::Response &res)
     return true;
 }
 
-bool saveGrid(fremen::SaveLoad::Request  &req, fremen::SaveLoad::Response &res)
+bool saveGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
     grid->save(req.filename.c_str(), (bool) req.lossy,req.order);
     ROS_INFO("3D Grid of %ix%ix%i saved !",grid->xDim,grid->yDim,grid->zDim);
@@ -163,33 +163,33 @@ void points(const sensor_msgs::PointCloud2ConstPtr& points2)
 	if (integrateMeasurements == 1)
 	{
 		integrateMeasurements--;
-		fremen::Visualize::Request req;
+		spatiotemporalexploration::Visualize::Request req;
 		req.green = req.blue = 0.0;
 		req.red = req.alpha = 1.0;
 	}
 }
 
-bool addView(fremen::AddView::Request  &req, fremen::AddView::Response &res)
+bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
 	integrateMeasurements = 2;
 	res.result = true;
 	return true;
 }
 
-bool addDepth(fremen::AddView::Request  &req, fremen::AddView::Response &res)
+bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
 	integrateMeasurements = 3;
 	res.result = true;
 	return true;
 }
 
-bool estimateEntropy(fremen::Entropy::Request  &req, fremen::Entropy::Response &res)
+bool estimateEntropy(spatiotemporalexploration::Entropy::Request  &req, spatiotemporalexploration::Entropy::Response &res)
 {
 	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
 	return true;
 }
 
-bool visualizeGrid(fremen::Visualize::Request  &req, fremen::Visualize::Response &res)
+bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiotemporalexploration::Visualize::Response &res)
 {
 	//init visualization markers:
 	visualization_msgs::Marker markers;
