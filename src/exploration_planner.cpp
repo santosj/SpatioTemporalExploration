@@ -124,6 +124,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             //Entropy Service Call:
             if(entropy_client_ptr->call(entropy_srv) > 0)
             {
+                ROS_INFO("(%d,%d) -> (%f, %f) | Value: %f | Obstacle: %f", i, j, entropy_srv.request.x, entropy_srv.request.y, entropy_srv.response.value, entropy_srv.response.obstacle);
                 if(entropy_srv.response.obstacle < 0.5)
                     entropies[i][j] = 0;
                 else
