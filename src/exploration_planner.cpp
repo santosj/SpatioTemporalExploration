@@ -4,15 +4,15 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <geometry_msgs/PoseArray.h>
-#include <fremen/PlanAction.h>
+#include <spatiotemporalexploration/PlanAction.h>
 #include <actionlib/server/simple_action_server.h>
 #include <actionlib/client/simple_action_client.h>
 
 
-#include "fremen/Entropy.h"
-#include "fremen/AddView.h"
-#include "fremen/Visualize.h"
-#include "fremen/SaveLoad.h"
+#include "spatiotemporalexploration/Entropy.h"
+#include "spatiotemporalexploration/AddView.h"
+#include "spatiotemporalexploration/Visualize.h"
+#include "spatiotemporalexploration/SaveLoad.h"
 #include "nav_msgs/GetPlan.h"
 
 #include "order.h"
@@ -25,7 +25,7 @@ int DIM_X,DIM_Y,DIM_Z;
 ros::ServiceClient *save_client_ptr;
 
 //typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
-typedef actionlib::SimpleActionServer<fremen::PlanAction> Server;
+typedef actionlib::SimpleActionServer<spatiotemporalexploration::PlanAction> Server;
 
 typedef struct
 {
@@ -51,16 +51,16 @@ ros::ServiceClient *entropy_client_ptr;
 
 ros::Publisher *points_pub_ptr, *max_pub_ptr;
 
-void execute(const fremen::PlanGoalConstPtr& goal, Server* as)
+void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as)
 {
 
-    ROS_INFO("Generating goals for timestamp %d", goal->t);
+    ROS_INFO("Generating goals for timestamp %d", (int)goal->t);
     as->acceptNewGoal();
 
-    fremen::PlanResult result;
+    spatiotemporalexploration::PlanResult result;
 
     //update entropy grid and publishes markers
-    fremen::Entropy entropy_srv;
+    spatiotemporalexploration::Entropy entropy_srv;
     entropy_srv.request.z = 1.69;//convert to parameter
     entropy_srv.request.r = sensor_range;//convert to parameter
     entropy_srv.request.t = 0.0;
@@ -275,7 +275,7 @@ int main(int argc,char *argv[])
     tf_listener_ptr = &tf_listener;
 
     //entropy service client
-    ros::ServiceClient entropy_client = n.serviceClient<fremen::Entropy>("/fremenGrid/entropy");
+    ros::ServiceClient entropy_client = n.serviceClient<spatiotemporalexploration::Entropy>("/fremenGrid/entropy");
     entropy_client_ptr = &entropy_client;
 
     //plan service client
