@@ -124,7 +124,11 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             //Entropy Service Call:
             if(entropy_client_ptr->call(entropy_srv) > 0)
             {
-                entropies[i][j] = entropy_srv.response.value;
+                if(entropy_srv.response.obstacle < 0.5)
+                    entropies[i][j] = 0;
+                else
+                    entropies[i][j] = entropy_srv.response.value;
+
                 entropies_aux[i + radius][j + radius] = entropies[i][j];
                 test_point.pose.position.x = entropy_srv.request.x;
                 test_point.pose.position.y = entropy_srv.request.y;

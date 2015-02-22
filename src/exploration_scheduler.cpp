@@ -32,7 +32,7 @@ int main(int argc,char *argv[])
     ROS_INFO("asking for a plan");
 
     //asks for a plan
-    plan_goal.max_loc = 6; //number ao local maximas
+    plan_goal.max_loc = 20; //number ao local maximas
     plan_goal.t = 0; //timestamp
     ac_plan.sendGoal(plan_goal);
     ac_plan.waitForResult();//timeout?
