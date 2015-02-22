@@ -119,6 +119,8 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             entropy_srv.request.x = MIN_X + entropies_step*(i+0.5);
             entropy_srv.request.y = MIN_Y + entropies_step*(j+0.5);
 
+//            ROS_INFO("(%d,%d) -> (%f, %f)", i, j, entropy_srv.request.x, entropy_srv.request.y);
+
             //Entropy Service Call:
             if(entropy_client_ptr->call(entropy_srv) > 0)
             {
@@ -160,7 +162,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     /*** Get maximas ***/
     ROS_INFO("Getting local maximas...");
-    vector<maxima> local_maximas;
+//    vector<maxima> local_maximas;
     maxima last_max, final_max;
     float ix[goal->max_loc], iy[goal->max_loc];
 
@@ -189,11 +191,14 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         final_max.x = last_max.x - radius;
         final_max.y = last_max.y - radius;
         final_max.value = last_max.value;
-        local_maximas.push_back(final_max);
+//        local_maximas.push_back(final_max);
 
         local_point.id = w;
-        local_point.pose.position.y = MIN_X + entropies_step*final_max.x;
-        local_point.pose.position.x = MIN_Y + entropies_step*final_max.y;
+        local_point.pose.position.y = MIN_Y + entropies_step*(final_max.x + 0.5);
+        local_point.pose.position.x = MIN_X + entropies_step*(final_max.y + 0.5);
+//        ROS_INFO("(%d,%d) -> (%f, %f)", final_max.x, final_max.y, local_point.pose.position.x, local_point.pose.position.y);
+
+
         ix[w] = local_point.pose.position.x;
         iy[w] = local_point.pose.position.y;
         maximas_makers.markers.push_back(local_point);
@@ -210,19 +215,14 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     /*** Path planning ***/
     ROS_INFO("planning the path...");
     CTSP tsp(ix, iy, goal->max_loc);
-    ROS_INFO("planning the path...1");
-    printf("%d", goal->max_loc);
     tsp.solve(goal->max_loc*2);
-    ROS_INFO("planning the path...2");
 
     result.locations.header.frame_id = "map";
 
     geometry_msgs::Pose pose_aux;
 
-    ROS_INFO("planning the path...3");
     for(int i = 0; i < goal->max_loc; i++)
     {
-        ROS_INFO("planning the path...%d", i);
         pose_aux.position.x = ix[i];
         pose_aux.position.y = iy[i];
         pose_aux.orientation.w = 1.0;
@@ -247,7 +247,7 @@ int main(int argc,char *argv[])
     ros::NodeHandle nh("~");
     nh.param("entropies_step", entropies_step, 0.5);
     nh.param("sensor_range", sensor_range, 4.6);
-    nh.param("radius", radius, 6);
+    nh.param("radius", radius, 12);
 
     n.getParam("/fremenGrid/minX",MIN_X);
     n.getParam("/fremenGrid/minY",MIN_Y);

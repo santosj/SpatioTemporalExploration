@@ -20,14 +20,14 @@
 #include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
-#define FLAT_BIG
+#define WW
 
 #ifdef WW
-#define MIN_X  -12.0
-#define MIN_Y  -13.0 
+#define MIN_X  -15.5
+#define MIN_Y  -6.0
 #define MIN_Z  -0.0
-#define DIM_X 280 
-#define DIM_Y 340 
+#define DIM_X 320
+#define DIM_Y 240
 #define DIM_Z 60 
 #endif
 
