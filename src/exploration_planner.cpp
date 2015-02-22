@@ -247,7 +247,7 @@ int main(int argc,char *argv[])
     ros::NodeHandle nh("~");
     nh.param("entropies_step", entropies_step, 0.5);
     nh.param("sensor_range", sensor_range, 4.6);
-    nh.param("radius", radius, 12);
+    nh.param("radius", radius, 9);
 
     n.getParam("/fremenGrid/minX",MIN_X);
     n.getParam("/fremenGrid/minY",MIN_Y);

@@ -33,7 +33,7 @@ int main(int argc,char *argv[])
 
     //asks for a plan
     plan_goal.max_loc = 6; //number ao local maximas
-    plan_goal.t = 10000; //timestamp
+    plan_goal.t = 0; //timestamp
     ac_plan.sendGoal(plan_goal);
     ac_plan.waitForResult();//timeout?
 

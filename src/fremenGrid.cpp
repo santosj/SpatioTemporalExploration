@@ -85,7 +85,7 @@
 #define DIM_Z 60
 #endif
 
-#define CAMERA_RANGE 4.0
+#define CAMERA_RANGE 3.0
 
 #define RESOLUTION 0.05
 
