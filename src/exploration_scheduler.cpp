@@ -85,7 +85,7 @@ int main(int argc,char *argv[])
     //generate the times for the entire day
 
     //asks for a plan
-    plan_goal.max_loc = 10; //number ao local maximas
+    plan_goal.max_loc = 3; //number ao local maximas
     plan_goal.t = 0; //timestamp
     ac_plan.sendGoal(plan_goal);
     ac_plan.waitForResult();//timeout?
