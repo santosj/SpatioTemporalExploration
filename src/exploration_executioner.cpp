@@ -112,7 +112,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             ROS_INFO("Moving to location %d/%d -> (%f,%f)",  i, n, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
             ac_nav_ptr->sendGoal(current_goal);
 
-            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+//            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+            ac_nav_ptr->waitForResult();
 
             if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
             {
@@ -121,7 +122,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 {
                     ac_nav_ptr->sendGoal(current_goal);
                     ROS_INFO("trying to recover: %d", retries);
-                    while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+                    //while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+                    ac_nav_ptr->waitForResult();
                     retries++;
 
                 }
