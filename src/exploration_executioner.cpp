@@ -13,6 +13,7 @@
 
 #include "spatiotemporalexploration/AddView.h"
 #include "spatiotemporalexploration/Visualize.h"
+#include "spatiotemporalexploration/Reachable.h"
 
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
@@ -38,6 +39,8 @@ typedef actionlib::SimpleActionServer<spatiotemporalexploration::ExecutionAction
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> *ac_nav_ptr;
+
+ros::Publisher *reach_pub_ptr;
 
 void movePtu(float pan,float tilt)
 {
@@ -92,6 +95,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     //    actionlib::SimpleClientGoalState state;
 
+    spatiotemporalexploration::Reachable reachable_points;
+
     if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)//undocking was sucessful
     {
         current_goal.action_server = "move_base";
@@ -118,7 +123,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
             {
                 ROS_WARN("failed to reach goal!");
-                while(retries < 3 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
+                while(retries < 4 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
                 {
                     ac_nav_ptr->sendGoal(current_goal);
                     ROS_INFO("trying to recover: %d", retries);
@@ -131,10 +136,18 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             }
 
             if (i>0 && i < n-1){
+                reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
+                reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
                 if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                {
                     ROS_INFO("Monitored navigation: SUCCEEDED! taking measurements!");
+                    reachable_points.value.push_back(1);
+                }
                 else
+                {
                     ROS_WARN("Point not reacheable! Taking measurements and moving to the next point...");
+                    reachable_points.value.push_back(0);
+                }
 
                 point = 0;
                 movePtu(pan[point],tilt[point]);
@@ -191,6 +204,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         }
 
         ROS_INFO("my work is done! going to charging station...");
+        reach_pub_ptr->publish(reachable_points);
 
         //Docking
         current_goal.action_server = "docking";
@@ -224,6 +238,10 @@ int main(int argc,char *argv[])
     actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> ac_nav("monitored_navigation",true);
     ac_nav_ptr = &ac_nav;
     ac_nav.waitForServer();
+
+    //Publishers
+    ros::Publisher reach_pub = nh.advertise<spatiotemporalexploration::Reachable>("/reachable_points", 10);
+    reach_pub_ptr = &reach_pub;
 
     //Subscribers
     ros::Subscriber ptu_sub = n.subscribe("/ptu/state", 10, ptuCallback);

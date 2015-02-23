@@ -5,6 +5,11 @@ find_package(catkin REQUIRED COMPONENTS  pcl_conversions pcl_ros roscpp rospy st
 set ( CMAKE_CXX_FLAGS "-Ofast -march=native -mno-avx -ggdb")
 #set ( CMAKE_CXX_FLAGS "-ggdb")
 
+add_message_files(
+  FILES
+  Reachable.msg
+)
+
 add_service_files(
 		FILES
 		Entropy.srv
