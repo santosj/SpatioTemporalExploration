@@ -356,6 +356,7 @@ int main(int argc,char *argv[])
     ros::Subscriber point_subscriber = n.subscribe<sensor_msgs::PointCloud2> ("/head_xtion/depth/points",  1000, points);
     image_transport::Subscriber image_subscriber = imageTransporter.subscribe("/head_xtion/depth/image_raw", 1, imageCallback);
     retrieve_publisher = n.advertise<visualization_msgs::Marker>("/fremenGrid/visCells", 100);
+    information_publisher  = n.advertise<visualization_msgs::Marker>("/fremenGrid/obtainedInformation", 100);
 
     //Services:
     ros::ServiceServer retrieve_service = n.advertiseService("/fremenGrid/visualize", visualizeGrid);
