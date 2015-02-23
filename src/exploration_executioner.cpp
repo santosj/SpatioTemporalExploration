@@ -123,7 +123,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
             {
                 ROS_WARN("failed to reach goal!");
-                while(retries < 4 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
+                while(retries < 3 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
                 {
                     ac_nav_ptr->sendGoal(current_goal);
                     ROS_INFO("trying to recover: %d", retries);

@@ -39,7 +39,7 @@ int main(int argc,char *argv[])
 
     if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
-        ROS_INFO("received plan");
+        ROS_INFO("Received a plan with possible information gain of %f",ac_plan.getResult()->information);
         ROS_INFO("executing plan");
 
         //executes plan

@@ -71,14 +71,14 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
         if(msg->value[i])//true is reachable
         {
-            if(reachability_grid_ptr[ind] < 1.0)
-                reachability_grid_ptr[ind] += 0.2;
+		reachability_grid_ptr[ind] += 0.2;
+		if(reachability_grid_ptr[ind] > 1.0)reachability_grid_ptr[ind] = 1.0;
         }
         else
-        {
-            if(reachability_grid_ptr[ind] > 0.0)
-                reachability_grid_ptr[ind] -= 0.2;
-        }
+	{
+		reachability_grid_ptr[ind] -= 0.2;
+		if (reachability_grid_ptr[ind] < 0.0) reachability_grid_ptr[ind] = 0.0;
+	}
 
     }
 
@@ -208,11 +208,13 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 test_point.pose.position.z = test_point.scale.z/2;
                 points_markers.markers.push_back(test_point);
 
-                ind++;
                 ros::spinOnce();
             }
-            else
-                entropies_aux[i + radius][j + radius] = 0.0;
+	    else
+	    {
+		    entropies_aux[i + radius][j + radius] = 0.0;
+	    }
+            ind++;
         }
     }
 
@@ -389,7 +391,7 @@ int main(int argc,char *argv[])
             {
                 if((int) plan.response.plan.poses.size() > 0){//goal is reachable
                     reachability_grid_ptr[grid_ind] = 1.0;
-                   print("aha %i",grid_ind);
+                   printf("aha %i\n",grid_ind);
                 }
                 else
                     reachability_grid_ptr[grid_ind] = 0.0;
