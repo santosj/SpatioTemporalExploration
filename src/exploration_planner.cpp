@@ -169,7 +169,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             //                {
 
             //ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
-            ROS_INFO("reachable? %f", reachability_grid_ptr[ind]);
+//            ROS_INFO("reachable? %f", reachability_grid_ptr[ind]);
             if(reachability_grid_ptr[ind] > 0.0)
             {
 
@@ -387,6 +387,7 @@ int main(int argc,char *argv[])
             plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
             if(plan_client.call(plan))//path received
             {
+                ROS_INFO("%d", (int) plan.response.plan.poses.size());
                 if((int) plan.response.plan.poses.size() > 0)//goal is reachable
                     reachability_grid_ptr[grid_ind] = 1.0;
                 else
