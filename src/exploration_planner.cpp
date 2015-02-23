@@ -169,7 +169,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             //                {
 
             //ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
-
+            ROS_INFO("reachable? %f", reachability_grid_ptr[ind]);
             if(reachability_grid_ptr[ind] > 0.0)
             {
 
@@ -363,9 +363,9 @@ int main(int argc,char *argv[])
     tf::StampedTransform st;
 
     //reachability grid
-    float reachability_grid[numCellsX*numCellsY];
-    memset(reachability_grid, 1.0 , sizeof(reachability_grid));
-    reachability_grid_ptr = reachability_grid;
+    reachability_grid_ptr = new float[numCellsX*numCellsY];
+//    memset(reachability_grid_ptr, 1.0 , sizeof(reachability_grid_ptr));
+    //reachability_grid_ptr = reachability_grid;
 
     plan.request.start.pose.position.x = -1.0;
     plan.request.start.pose.position.y = 0.0;
@@ -375,6 +375,7 @@ int main(int argc,char *argv[])
     plan.request.goal.header.frame_id = "/map";
     plan.request.goal.pose.orientation.w = 1.0;
     plan.request.tolerance = 0.2;
+
 
     ROS_INFO("initializing reachability grid");
     int grid_ind = 0;
@@ -387,14 +388,14 @@ int main(int argc,char *argv[])
             if(plan_client.call(plan))//path received
             {
                 if((int) plan.response.plan.poses.size() > 0)//goal is reachable
-                    reachability_grid[grid_ind] = 1.0;
+                    reachability_grid_ptr[grid_ind] = 1.0;
                 else
-                    reachability_grid[grid_ind] = 0.0;
+                    reachability_grid_ptr[grid_ind] = 0.0;
             }
             else
             {
                 ROS_ERROR("failed to call make_plan service");
-                reachability_grid[grid_ind] = 0.0;
+                reachability_grid_ptr[grid_ind] = 0.0;
             }
             grid_ind++;
         }
