@@ -122,9 +122,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     ac_nav_ptr->sendGoal(current_goal);
                     ROS_INFO("trying to recover: %d", retries);
                     while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+                    retries++;
 
                 }
-                retries++;
+
             }
 
             if (i>0 && i < n-1){
