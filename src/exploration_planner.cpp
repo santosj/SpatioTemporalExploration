@@ -253,7 +253,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     /*** Path planning ***/
     ROS_INFO("planning the path...");
-    CTSP tsp(ix, iy, goal->max_loc);
+    CTSP tsp(ix, iy, goal->max_loc+1);
     tsp.solve(goal->max_loc*2);
 
     result.locations.header.frame_id = "map";
