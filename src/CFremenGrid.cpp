@@ -90,7 +90,7 @@ int CFremenGrid::getIndex(float x,float  y,float  z)
 float CFremenGrid::getClosestObstacle(float xp,float yp,float zt,float range)
 {
 	float rangeLimit=(range/resolution);
-	float minRange=range*range;
+	float minRange=rangeLimit*rangeLimit;
 	int xStart = (int)((xp-oX-range)/resolution);
 	int xEnd   = (int)((xp-oX+range)/resolution);
 	int yStart = (int)((yp-oY-range)/resolution);

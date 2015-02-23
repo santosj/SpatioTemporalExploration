@@ -26,9 +26,9 @@
 #define MIN_X  -15.5
 #define MIN_Y  -6.0
 #define MIN_Z  -0.0
-#define DIM_X 320
-#define DIM_Y 240
-#define DIM_Z 60 
+#define DIM_X 160
+#define DIM_Y 120
+#define DIM_Z 30 
 #endif
 
 #ifdef BHAM_LARGE
@@ -85,9 +85,9 @@
 #define DIM_Z 60
 #endif
 
-#define CAMERA_RANGE 3.0
+#define CAMERA_RANGE 4.0
 
-#define RESOLUTION 0.05
+#define RESOLUTION 0.1
 
 using namespace std;
 
@@ -222,13 +222,13 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
 	float minZ = grid->oZ;
 	float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
 	float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
-	float maxZ = minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
+	float maxZ = 2.1;//minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
 	int cnt = 0;
 	int cells = 0;
 	float estimate,minP,maxP;
 	minP = req.minProbability;
 	maxP = req.maxProbability;
-	
+		
 	//iterate over the cells' probabilities 
 	for(float z = minZ;z<maxZ;z+=resolution){
 		for(float y = minY;y<maxY;y+=resolution){

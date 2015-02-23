@@ -111,6 +111,15 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     nav_msgs::GetPlan plan_srv;
 
+    plan_srv.request.start.pose.position.x = -1.0;
+    plan_srv.request.start.pose.position.y = 0.0;
+    plan_srv.request.start.header.frame_id = "/map";
+    plan_srv.request.start.pose.orientation.w = 1.0;
+
+    plan_srv.request.goal.header.frame_id = "/map";
+    plan_srv.request.goal.pose.orientation.w = 1.0;
+    plan_srv.request.tolerance = 0.2;
+
     ROS_INFO("updating grid...");
 
     //update grid
@@ -124,12 +133,14 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             plan_srv.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
             plan_srv.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
 
+	    plan_srv.request.goal.header.frame_id = "/map";
+
             if(plan_client_ptr->call(plan_srv))//path received
-            {
+	    {
                 if((int) plan_srv.response.plan.poses.size() > 0)//goal is reachable
                 {
 
-                    ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+                    //ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
 
                     //Entropy Service Call:
                     entropy_srv.request.t = goal->t;
@@ -189,7 +200,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     ROS_INFO("Getting local maximas...");
     //    vector<maxima> local_maximas;
     maxima last_max, final_max;
-    float ix[goal->max_loc], iy[goal->max_loc];
+    float ix[goal->max_loc+1], iy[goal->max_loc+1];
 
     result.information = 0;
 
@@ -224,8 +235,8 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         //        ROS_INFO("(%d,%d) -> (%f, %f)", final_max.x, final_max.y, local_point.pose.position.x, local_point.pose.position.y);
 
 
-        ix[w] = local_point.pose.position.x;
-        iy[w] = local_point.pose.position.y;
+        ix[w+1] = local_point.pose.position.x;
+        iy[w+1] = local_point.pose.position.y;
         maximas_makers.markers.push_back(local_point);
 
         for(int y = 0; y < radius*2 + 1; y++)
@@ -236,6 +247,8 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             }
         }
     }
+    ix[0] = -1.0;
+    iy[0] =  0.0;
 
     /*** Path planning ***/
     ROS_INFO("planning the path...");
@@ -246,7 +259,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     geometry_msgs::Pose pose_aux;
 
-    for(int i = 0; i < goal->max_loc; i++)
+    for(int i = 0; i < goal->max_loc+2; i++)
     {
         pose_aux.position.x = tsp.x[i];
         pose_aux.position.y = tsp.y[i];
@@ -271,7 +284,7 @@ int main(int argc,char *argv[])
 
     ros::NodeHandle nh("~");
     nh.param("entropies_step", entropies_step, 0.5);
-    nh.param("sensor_range", sensor_range, 4.6);
+    nh.param("sensor_range", sensor_range, 4.0);
     nh.param("radius", radius, 9);
 
     n.getParam("/fremenGrid/minX",MIN_X);
@@ -302,10 +315,6 @@ int main(int argc,char *argv[])
     //entropy service client
     ros::ServiceClient entropy_client = n.serviceClient<spatiotemporalexploration::Entropy>("/fremenGrid/entropy");
     entropy_client_ptr = &entropy_client;
-
-    //move_base client
-    move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.frame_id = "/map";//???
 
     //plan service client
     ros::ServiceClient plan_client = n.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
