@@ -6,6 +6,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Point.h>
 #include <std_msgs/ColorRGBA.h>
+#include <std_msgs/Float32.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
@@ -20,15 +21,15 @@
 #include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
-#define FLAT_BIG
+#define WW
 
 #ifdef WW
-#define MIN_X  -12.0
-#define MIN_Y  -13.0 
+#define MIN_X  -15.5
+#define MIN_Y  -6.0
 #define MIN_Z  -0.0
-#define DIM_X 280 
-#define DIM_Y 340 
-#define DIM_Z 60 
+#define DIM_X 160
+#define DIM_Y 120
+#define DIM_Z 30 
 #endif
 
 #ifdef BHAM_LARGE
@@ -87,7 +88,7 @@
 
 #define CAMERA_RANGE 4.0
 
-#define RESOLUTION 0.05
+#define RESOLUTION 0.1
 
 using namespace std;
 
@@ -99,6 +100,7 @@ tf::TransformListener *tf_listener;
 
 ros::Publisher *octomap_pub_ptr, *estimate_pub_ptr,*clock_pub_ptr;
 ros::Publisher retrieve_publisher;
+ros::Publisher information_publisher;
  
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -171,9 +173,11 @@ void points(const sensor_msgs::PointCloud2ConstPtr& points2)
 
 bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
+	std_msgs::Float32 info;
 	integrateMeasurements = 2;
 	res.result = true;
-	res.information = grid->getObtainedInformation();
+	info.data = res.information = grid->getObtainedInformation();
+	information_publisher.publish(info);
 	return true;
 }
 
@@ -224,13 +228,13 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
 	float minZ = grid->oZ;
 	float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
 	float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
-	float maxZ = minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
+	float maxZ = 2.1;//minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
 	int cnt = 0;
 	int cells = 0;
 	float estimate,minP,maxP;
 	minP = req.minProbability;
 	maxP = req.maxProbability;
-	
+		
 	//iterate over the cells' probabilities 
 	for(float z = minZ;z<maxZ;z+=resolution){
 		for(float y = minY;y<maxY;y+=resolution){
@@ -356,7 +360,7 @@ int main(int argc,char *argv[])
     ros::Subscriber point_subscriber = n.subscribe<sensor_msgs::PointCloud2> ("/head_xtion/depth/points",  1000, points);
     image_transport::Subscriber image_subscriber = imageTransporter.subscribe("/head_xtion/depth/image_raw", 1, imageCallback);
     retrieve_publisher = n.advertise<visualization_msgs::Marker>("/fremenGrid/visCells", 100);
-    information_publisher  = n.advertise<visualization_msgs::Marker>("/fremenGrid/obtainedInformation", 100);
+    information_publisher  = n.advertise<std_msgs::Float32>("/fremenGrid/obtainedInformation", 100);
 
     //Services:
     ros::ServiceServer retrieve_service = n.advertiseService("/fremenGrid/visualize", visualizeGrid);

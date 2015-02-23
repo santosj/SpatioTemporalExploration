@@ -70,7 +70,6 @@ int main(int argc,char *argv[])
     for (int i = 1;i<SLOTS;i+=2) numExp+=plan[i];
     }while (numExp != SLOTS/4);
     for (int i = 1;i<SLOTS;i+=2) printf("PLAN: %i %i\n",i,plan[i]);
-    return 0;
 
     ExecutionClient ac_execution("executioner", true);
     ac_execution.waitForServer();
@@ -87,7 +86,7 @@ int main(int argc,char *argv[])
 
     //asks for a plan
     plan_goal.max_loc = 10; //number ao local maximas
-    plan_goal.t = 10000; //timestamp
+    plan_goal.t = 0; //timestamp
     ac_plan.sendGoal(plan_goal);
     ac_plan.waitForResult();//timeout?
 

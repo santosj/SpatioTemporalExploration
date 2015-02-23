@@ -17,12 +17,14 @@
 
 #include "order.h"
 
-#define MAX_ENTROPY 450000
+#define MAX_ENTROPY 100000
 
 double MIN_X,MIN_Y,MIN_Z,RESOLUTION;
 int DIM_X,DIM_Y,DIM_Z;
 
-ros::ServiceClient *save_client_ptr;
+typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+
+ros::ServiceClient *save_client_ptr, *plan_client_ptr;
 
 //typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 typedef actionlib::SimpleActionServer<spatiotemporalexploration::PlanAction> Server;
@@ -101,11 +103,22 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
 
     //entropies grid
-    double entropies[numCellsX][numCellsY];
+    //    double entropies[numCellsX][numCellsY];
 
     //auxiliary entropies grid:
     double entropies_aux[numCellsX + radius*2][numCellsY + radius*2];
     memset(entropies_aux, 0, sizeof entropies_aux);
+
+    nav_msgs::GetPlan plan_srv;
+
+    plan_srv.request.start.pose.position.x = -1.0;
+    plan_srv.request.start.pose.position.y = 0.0;
+    plan_srv.request.start.header.frame_id = "/map";
+    plan_srv.request.start.pose.orientation.w = 1.0;
+
+    plan_srv.request.goal.header.frame_id = "/map";
+    plan_srv.request.goal.pose.orientation.w = 1.0;
+    plan_srv.request.tolerance = 0.2;
 
     ROS_INFO("updating grid...");
 
@@ -115,30 +128,55 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     {
         for(int j = 0; j < numCellsY; j++)
         {
-            entropy_srv.request.t = goal->t;
-            entropy_srv.request.x = MIN_X + entropies_step*(i+0.5);
-            entropy_srv.request.y = MIN_Y + entropies_step*(j+0.5);
 
-            //Entropy Service Call:
-            if(entropy_client_ptr->call(entropy_srv) > 0)
-            {
-                entropies[i][j] = entropy_srv.response.value;
-                entropies_aux[i + radius][j + radius] = entropies[i][j];
-                test_point.pose.position.x = entropy_srv.request.x;
-                test_point.pose.position.y = entropy_srv.request.y;
-                test_point.id = ind;
-                test_point.color.r = 0.0;
-                test_point.color.g = 1.0 - (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
-                test_point.color.b = (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
-                test_point.scale.z = 0.01 + (entropies_step * entropy_srv.response.value)/MAX_ENTROPY;
-                test_point.pose.position.z = test_point.scale.z/2;
-                points_markers.markers.push_back(test_point);
+            //get plan
+            plan_srv.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
+            plan_srv.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
+
+	    plan_srv.request.goal.header.frame_id = "/map";
+
+            if(plan_client_ptr->call(plan_srv))//path received
+	    {
+                if((int) plan_srv.response.plan.poses.size() > 0)//goal is reachable
+                {
+
+                    //ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+
+                    //Entropy Service Call:
+                    entropy_srv.request.t = goal->t;
+                    entropy_srv.request.x = plan_srv.request.goal.pose.position.x;
+                    entropy_srv.request.y = plan_srv.request.goal.pose.position.y;
+
+                    if(entropy_client_ptr->call(entropy_srv) > 0)
+                        entropies_aux[i + radius][j + radius] = entropy_srv.response.value;
+                    else
+                    {
+                        ROS_INFO("entropy service failed");
+                        entropies_aux[i + radius][j + radius] = 0;
+                    }
+                }
+                else
+                {
+                    //ROS_INFO("Goal NOT reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+                    entropies_aux[i + radius][j + radius] = 0;
+                }
             }
             else
             {
-                ROS_ERROR("Failed to call plan service!");
-                exit(1);
+                //ROS_INFO("Goal NOT reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+                entropies_aux[i + radius][j + radius] = 0;
             }
+            entropy_srv.response.value=entropies_aux[i + radius][j + radius];
+            test_point.pose.position.x = plan_srv.request.goal.pose.position.x;
+            test_point.pose.position.y = plan_srv.request.goal.pose.position.y;
+            test_point.id = ind;
+            test_point.color.r = 0.0;
+            test_point.color.g = 1.0 - (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
+            test_point.color.b = (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
+            test_point.scale.z = 0.01 + (entropies_step * entropy_srv.response.value)/MAX_ENTROPY;
+            test_point.pose.position.z = test_point.scale.z/2;
+            points_markers.markers.push_back(test_point);
+
             ind++;
             ros::spinOnce();
         }
@@ -160,9 +198,9 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     /*** Get maximas ***/
     ROS_INFO("Getting local maximas...");
-    vector<maxima> local_maximas;
+    //    vector<maxima> local_maximas;
     maxima last_max, final_max;
-    float ix[goal->max_loc], iy[goal->max_loc];
+    float ix[goal->max_loc+1], iy[goal->max_loc+1];
 
     result.information = 0;
 
@@ -182,6 +220,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                     result.information += last_max.value;
                     last_max.x = x;
                     last_max.y = y;
+	//		ROS_INFO("max: %f", last_max.value);
                 }
             }
         }
@@ -189,13 +228,16 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         final_max.x = last_max.x - radius;
         final_max.y = last_max.y - radius;
         final_max.value = last_max.value;
-        local_maximas.push_back(final_max);
+        //        local_maximas.push_back(final_max);
 
         local_point.id = w;
-        local_point.pose.position.y = MIN_X + entropies_step*final_max.x;
-        local_point.pose.position.x = MIN_Y + entropies_step*final_max.y;
-        ix[w] = local_point.pose.position.x;
-        iy[w] = local_point.pose.position.y;
+        local_point.pose.position.y = MIN_Y + entropies_step*(final_max.x + 0.5);
+        local_point.pose.position.x = MIN_X + entropies_step*(final_max.y + 0.5);
+        //        ROS_INFO("(%d,%d) -> (%f, %f)", final_max.x, final_max.y, local_point.pose.position.x, local_point.pose.position.y);
+
+
+        ix[w+1] = local_point.pose.position.x;
+        iy[w+1] = local_point.pose.position.y;
         maximas_makers.markers.push_back(local_point);
 
         for(int y = 0; y < radius*2 + 1; y++)
@@ -206,25 +248,22 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             }
         }
     }
+    ix[0] = -1.0;
+    iy[0] =  0.0;
 
     /*** Path planning ***/
     ROS_INFO("planning the path...");
     CTSP tsp(ix, iy, goal->max_loc);
-    ROS_INFO("planning the path...1");
-    printf("%d", goal->max_loc);
     tsp.solve(goal->max_loc*2);
-    ROS_INFO("planning the path...2");
 
     result.locations.header.frame_id = "map";
 
     geometry_msgs::Pose pose_aux;
 
-    ROS_INFO("planning the path...3");
-    for(int i = 0; i < goal->max_loc; i++)
+    for(int i = 0; i < goal->max_loc+2; i++)
     {
-        ROS_INFO("planning the path...%d", i);
-        pose_aux.position.x = ix[i];
-        pose_aux.position.y = iy[i];
+        pose_aux.position.x = tsp.x[i];
+        pose_aux.position.y = tsp.y[i];
         pose_aux.orientation.w = 1.0;
         result.locations.poses.push_back(pose_aux);
     }
@@ -246,8 +285,8 @@ int main(int argc,char *argv[])
 
     ros::NodeHandle nh("~");
     nh.param("entropies_step", entropies_step, 0.5);
-    nh.param("sensor_range", sensor_range, 4.6);
-    nh.param("radius", radius, 6);
+    nh.param("sensor_range", sensor_range, 4.0);
+    nh.param("radius", radius, 9);
 
     n.getParam("/fremenGrid/minX",MIN_X);
     n.getParam("/fremenGrid/minY",MIN_Y);
@@ -266,8 +305,8 @@ int main(int argc,char *argv[])
     ROS_INFO("entropies grid %d x %d -> numCells: %d", numCellsX, numCellsY, numCellsX*numCellsY);
 
     //tell the action client that we want to spin a thread by default
-//    MoveBaseClient ac("move_base", true);
-//    ac_ptr = &ac;
+    //    MoveBaseClient ac("move_base", true);
+    //    ac_ptr = &ac;
 
     ROS_INFO("Starting goal generation node...");
 
@@ -280,11 +319,8 @@ int main(int argc,char *argv[])
 
     //plan service client
     ros::ServiceClient plan_client = n.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
-    nav_msgs::GetPlan plan_srv;
+    plan_client_ptr = &plan_client;
 
-    //move_base client
-    move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.frame_id = "/map";
 
 
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_grid", 100);

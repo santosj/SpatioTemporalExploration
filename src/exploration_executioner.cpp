@@ -53,7 +53,7 @@ void movePtu(float pan,float tilt)
 void ptuCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
     float pan,tilt;
-    for (int i = 0;i<3;i++){
+    for (int i = 0;i<2;i++){
         if (msg->name[i] == "pan") pan = msg->position[i];
         if (msg->name[i] == "tilt") tilt = msg->position[i];
     }
@@ -69,8 +69,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //as->setPreempted();
 
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;
-    current_goal.action_server = "move_base";
-    current_goal.target_pose.header.frame_id = "map";
+
 
     spatiotemporalexploration::ExecutionFeedback feedback;
 
@@ -79,90 +78,174 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     int numPoints = 14;
     int point = 0;
     float pan[] =  { 0.00, 0.90, 1.80, 2.70, 2.70, 1.80, 0.90, 0.00,-0.90,-1.80,-2.70,-2.70,-1.80,-0.90,0.00};
-    float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.30,-0.30,-0.30,-0.30,-0.30,-0.30,-0.30, 0.50, 0.50, 0.50,0.00};
+    float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
 
     int n = (int) goal->locations.poses.size();
 
     ROS_INFO("received %d locations to visit in %f minutes", n, 0.0);
 
-    for(int i = 0; i < n; i++)
+    ROS_INFO("undocking...");
+
+    //Undocking
+    current_goal.action_server = "undocking";
+    current_goal.target_pose.header.frame_id = "map";
+    ac_nav_ptr->sendGoal(current_goal);
+    ac_nav_ptr->waitForResult(ros::Duration(0.0));
+
+    current_goal.action_server = "move_base";
+    current_goal.target_pose.header.frame_id = "map";
+
+    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
+        ROS_INFO("undocking sucessful!!! I'm going places!");
+        for(int i = 0; i < n; i++)
+        {
+            char cr_goal[10];
+            sprintf(cr_goal, "%d/%d", i, n);
+            ROS_INFO("Location: %d/%d", i, n);
+            feedback.current_goal = cr_goal;
+            feedback.time_remaining = 0;//TODO
+            as->publishFeedback(feedback);
 
 
-        char cr_goal[10];
-        sprintf(cr_goal, "%d/%d", i, n);
-        feedback.current_goal = cr_goal;
-        feedback.time_remaining = 0;//TODO
-        as->publishFeedback(feedback);
+            current_goal.target_pose.pose = goal->locations.poses[i];
+            ROS_INFO("moving to location %d -> (%f,%f)",  i, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
+            ac_nav_ptr->sendGoal(current_goal);
 
+    //        ROS_INFO("moving to location %d -> (%f,%f)",  i, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
+            ac_nav_ptr->waitForResult(ros::Duration(0.0));
+	    if (i>0 && i < n-1){
+		    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+		    {
+			    ROS_INFO("Monitored navigation: SUCCEEDED!");
+			    point = 0;
+			    movePtu(pan[point],tilt[point]);
 
-        current_goal.target_pose.pose = goal->locations.poses[i];
-        ROS_INFO("moving to location %d -> (%f,%f)",  i, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
+			    ros::spinOnce();
+			    while (ros::ok() && point < numPoints)
+			    {
+				    measure_srv.request.stamp = 0.0;
+				    if (ptuMovementFinished > 10)
+				    {
+					    if(measure_client_ptr->call(measure_srv))
+					    {
+						    ROS_INFO("Measure added to grid!");
+					    }
+					    else
+					    {
+						    ROS_ERROR("Failed to call measure service");
+						    exit(1);
+					    }
+
+					    point++;
+					    movePtu(pan[point],tilt[point]);
+					    ros::spinOnce();
+					    usleep(500000);
+					    if(drawCells){
+						    visualize_srv.request.red = visualize_srv.request.blue = 0.0;
+						    visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
+						    visualize_srv.request.minProbability = 0.9;
+						    visualize_srv.request.maxProbability = 1.0;
+						    visualize_srv.request.name = "occupied";
+						    visualize_srv.request.type = 0;
+						    visualize_client_ptr->call(visualize_srv);
+						    ros::spinOnce();
+						    usleep(100000);
+						    if (drawEmptyCells){
+							    visualize_srv.request.green = 0.0;
+							    visualize_srv.request.red = 1.0;
+							    visualize_srv.request.minProbability = 0.0;
+							    visualize_srv.request.maxProbability = 0.1;
+							    visualize_srv.request.alpha = 0.005;
+							    visualize_srv.request.name = "free";
+							    visualize_srv.request.type = 0;
+							    visualize_client_ptr->call(visualize_srv);
+							    ros::spinOnce();
+							    usleep(100000);
+						    }
+					    }
+				    }
+				    ros::spinOnce();
+			    }
+		    }
+		    else if(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PREEMPTED || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ABORTED)
+		    {
+			    ROS_INFO("Move base failed! Scanning this area...");
+			    point = 0;
+			    movePtu(pan[point],tilt[point]);
+
+			    ros::spinOnce();
+			    while (ros::ok() && point < numPoints)
+			    {
+				    measure_srv.request.stamp = 0.0;
+				    if (ptuMovementFinished > 10)
+				    {
+					    if(measure_client_ptr->call(measure_srv))
+					    {
+						    ROS_INFO("Measure added to grid!");
+					    }
+					    else
+					    {
+						    ROS_ERROR("Failed to call measure service");
+						    exit(1);
+					    }
+
+					    point++;
+					    movePtu(pan[point],tilt[point]);
+					    ros::spinOnce();
+					    usleep(500000);
+					    if(drawCells){
+						    visualize_srv.request.red = visualize_srv.request.blue = 0.0;
+						    visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
+						    visualize_srv.request.minProbability = 0.9;
+						    visualize_srv.request.maxProbability = 1.0;
+						    visualize_srv.request.name = "occupied";
+						    visualize_srv.request.type = 0;
+						    visualize_client_ptr->call(visualize_srv);
+						    ros::spinOnce();
+						    usleep(100000);
+						    if (drawEmptyCells){
+							    visualize_srv.request.green = 0.0;
+							    visualize_srv.request.red = 1.0;
+							    visualize_srv.request.minProbability = 0.0;
+							    visualize_srv.request.maxProbability = 0.1;
+							    visualize_srv.request.alpha = 0.005;
+							    visualize_srv.request.name = "free";
+							    visualize_srv.request.type = 0;
+							    visualize_client_ptr->call(visualize_srv);
+							    ros::spinOnce();
+							    usleep(100000);
+						    }
+					    }
+				    }
+				    ros::spinOnce();
+			    }
+			    ROS_INFO("Moving to the next goal!");
+		    }
+	    }
+            movePtu(0.0,0.0);
+        }
+
+        ROS_INFO("my work is done! going to charging station...");
+        //current_goal.target_pose.pose.position.x = -0.4;
+        //current_goal.target_pose.pose.position.y = 0.0;
+        //current_goal.target_pose.pose.orientation.w = 1.0;
+        //ac_nav_ptr->sendGoal(current_goal);
+        //ac_nav_ptr->waitForResult(ros::Duration(0.0));
+
+        //Docking
+        current_goal.action_server = "docking";
+        current_goal.target_pose.header.frame_id = "map";
         ac_nav_ptr->sendGoal(current_goal);
-
-//        ROS_INFO("moving to location %d -> (%f,%f)",  i, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
         ac_nav_ptr->waitForResult(ros::Duration(0.0));
-
-        if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-        {
-            ROS_INFO("Monitored navigation: SUCCEEDED!");
-            point = 0;
-            movePtu(pan[point],tilt[point]);
-
-            ros::spinOnce();
-            while (ros::ok() && point < numPoints)
-            {
-                measure_srv.request.stamp = 0.0;
-                if (ptuMovementFinished > 10)
-                {
-                    if(measure_client_ptr->call(measure_srv))
-                    {
-                        ROS_INFO("Measure added to grid!");
-                    }
-                    else
-                    {
-                        ROS_ERROR("Failed to call measure service");
-                        exit(1);
-                    }
-
-                    point++;
-                    movePtu(pan[point],tilt[point]);
-                    ros::spinOnce();
-                    usleep(500000);
-                    if(drawCells){
-                        visualize_srv.request.red = visualize_srv.request.blue = 0.0;
-                        visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
-                        visualize_srv.request.minProbability = 0.9;
-                        visualize_srv.request.maxProbability = 1.0;
-                        visualize_srv.request.name = "occupied";
-                        visualize_srv.request.type = 0;
-                        visualize_client_ptr->call(visualize_srv);
-                        ros::spinOnce();
-                        usleep(100000);
-                        if (drawEmptyCells){
-                            visualize_srv.request.green = 0.0;
-                            visualize_srv.request.red = 1.0;
-                            visualize_srv.request.minProbability = 0.0;
-                            visualize_srv.request.maxProbability = 0.1;
-                            visualize_srv.request.alpha = 0.005;
-                            visualize_srv.request.name = "free";
-                            visualize_srv.request.type = 0;
-                            visualize_client_ptr->call(visualize_srv);
-                            ros::spinOnce();
-                            usleep(100000);
-                        }
-                    }
-                }
-                ros::spinOnce();
-            }
-        }
-        else if(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PREEMPTED || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ABORTED)
-        {
-            ROS_INFO("Move base failed, trying next goal in the plan...");
-        }
-
-        movePtu(0.0,0.0);
     }
+    else{
+        ROS_INFO("undocking failed!");
+    }
+
+    as->setSucceeded();
+
+
 }
 
 int main(int argc,char *argv[])
