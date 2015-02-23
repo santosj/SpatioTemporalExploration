@@ -109,16 +109,18 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             as->publishFeedback(feedback);
 
             current_goal.target_pose.pose = goal->locations.poses[i];
-            ROS_INFO("moving to location %d/%d -> (%f,%f)",  i, n, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
+            ROS_INFO("Moving to location %d/%d -> (%f,%f)",  i, n, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
             ac_nav_ptr->sendGoal(current_goal);
 
             while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
 
             if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
             {
+                ROS_WARN("failed to reach goal!");
                 while(retries < 3 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
                 {
                     ac_nav_ptr->sendGoal(current_goal);
+                    ROS_INFO("trying to recover: %d", retries);
                     while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
 
                 }
@@ -129,7 +131,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
                     ROS_INFO("Monitored navigation: SUCCEEDED! taking measurements!");
                 else
-                    ROS_WARN("Point no reacheable! Taking measurements and moving to the next point...");
+                    ROS_WARN("Point not reacheable! Taking measurements and moving to the next point...");
 
                 point = 0;
                 movePtu(pan[point],tilt[point]);
