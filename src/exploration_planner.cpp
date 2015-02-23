@@ -387,9 +387,10 @@ int main(int argc,char *argv[])
             plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
             if(plan_client.call(plan))//path received
             {
-                ROS_INFO("%d", (int) plan.response.plan.poses.size());
-                if((int) plan.response.plan.poses.size() > 0)//goal is reachable
+                if((int) plan.response.plan.poses.size() > 0){//goal is reachable
                     reachability_grid_ptr[grid_ind] = 1.0;
+                   print("aha %i",grid_ind);
+                }
                 else
                     reachability_grid_ptr[grid_ind] = 0.0;
             }
