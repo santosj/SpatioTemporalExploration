@@ -17,7 +17,7 @@
 
 #include "order.h"
 
-#define MAX_ENTROPY 450000
+#define MAX_ENTROPY 100000
 
 double MIN_X,MIN_Y,MIN_Z,RESOLUTION;
 int DIM_X,DIM_Y,DIM_Z;
@@ -220,6 +220,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                     result.information += last_max.value;
                     last_max.x = x;
                     last_max.y = y;
+	//		ROS_INFO("max: %f", last_max.value);
                 }
             }
         }
