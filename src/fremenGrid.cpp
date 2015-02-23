@@ -6,6 +6,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/Point.h>
 #include <std_msgs/ColorRGBA.h>
+#include <std_msgs/Float32.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
@@ -99,6 +100,7 @@ tf::TransformListener *tf_listener;
 
 ros::Publisher *octomap_pub_ptr, *estimate_pub_ptr,*clock_pub_ptr;
 ros::Publisher retrieve_publisher;
+ros::Publisher information_publisher;
  
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -171,8 +173,11 @@ void points(const sensor_msgs::PointCloud2ConstPtr& points2)
 
 bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
+	std_msgs::Float32 info;
 	integrateMeasurements = 2;
 	res.result = true;
+	info.data = res.information = grid->getObtainedInformation();
+	information_publisher.publish(info);
 	return true;
 }
 
@@ -180,6 +185,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 {
 	integrateMeasurements = 3;
 	res.result = true;
+	res.information = grid->getObtainedInformation();
 	return true;
 }
 
@@ -354,6 +360,7 @@ int main(int argc,char *argv[])
     ros::Subscriber point_subscriber = n.subscribe<sensor_msgs::PointCloud2> ("/head_xtion/depth/points",  1000, points);
     image_transport::Subscriber image_subscriber = imageTransporter.subscribe("/head_xtion/depth/image_raw", 1, imageCallback);
     retrieve_publisher = n.advertise<visualization_msgs::Marker>("/fremenGrid/visCells", 100);
+    information_publisher  = n.advertise<std_msgs::Float32>("/fremenGrid/obtainedInformation", 100);
 
     //Services:
     ros::ServiceServer retrieve_service = n.advertiseService("/fremenGrid/visualize", visualizeGrid);
