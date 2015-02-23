@@ -91,7 +91,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     ac_nav_ptr->waitForResult(ros::Duration(0.0));
 
     //    actionlib::SimpleClientGoalState state;
-    unsigned int retries = 0;
 
     if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)//undocking was sucessful
     {
@@ -102,6 +101,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         ROS_INFO("Undocking sucessful! Starting exploration run.");
         for(int i = 0; i < n; i++)
         {
+            unsigned int retries = 0;
             char cr_goal[10];
             sprintf(cr_goal, "%d/%d", i, n);
             feedback.current_goal = cr_goal;
