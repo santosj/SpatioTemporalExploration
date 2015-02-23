@@ -170,7 +170,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
             //ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
 
-            if(reachability_grid_ptr[ind] > 0.0)
+            if(reachability_grid_ptr[ind] == 0.0)
             {
 
                 //Entropy Service Call:
