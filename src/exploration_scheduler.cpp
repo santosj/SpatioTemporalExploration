@@ -10,14 +10,34 @@ using namespace std;
 
 typedef actionlib::SimpleActionClient<spatiotemporalexploration::ExecutionAction> ExecutionClient;
 typedef actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> PlanClient;
+uint32_t timeStamps[SLOTS];
+unsigned char plans[SLOTS];
+int len=0;
 
-int cmpfunc(const void * a, const void * b)
+void loadPlan(const char* name)
 {
-	   return ( *(float*)a - *(float*)b );
+	int patrols=0;
+	FILE* file = fopen(name,"r");
+	uint32_t tmd;
+	int pland;
+	int err;
+	char realTime[10];
+	while (feof(file)==0)
+	{
+		err = fscanf(file,"%s %i %i\n",realTime,&tmd,&pland);
+		timeStamps[len] = tmd;
+		plans[len] = pland;
+		patrols+=plans[len];
+		//printf("%s %i %i\n",realTime,timeStamps[len],plans[len]);
+		len++;
+	}
+	fclose(file);
+	ROS_INFO("Scheduler: plan loaded length %i, %i patrols.\n",len,patrols);
 }
 
 int main(int argc,char *argv[])
 {
+	loadPlan(argv[1]);
 	ros::init(argc, argv, "exploration_scheduler");
 	ros::NodeHandle n;
 
@@ -35,80 +55,24 @@ int main(int argc,char *argv[])
 	spatiotemporalexploration::PlanGoal plan_goal;
 	spatiotemporalexploration::ExecutionGoal exec_goal;
 
-	//    /*the scheduling part*/
-	//    ros::Time currentTime = ros::Time::now();
-	//    printf("TIME: %i\n",currentTime.sec);
-	//    uint32_t midnight = (currentTime.sec/(24*3600)+0)*24*3600; //remove +1 to plan retrospectively
-	//    printf("MIDNIGHT: %i %i\n",midnight,midnight-currentTime.sec);
-	// 
-	// 
-	//    uint32_t timeSlots[SLOTS];
-	//    int plan[SLOTS]; 	/*0-charging 1-exploring*/
-	//    float estimatedGain[SLOTS];
-	//    float realGain[SLOTS];
-	//    memset(estimatedGain,0,sizeof(float)*SLOTS);
-	//    memset(realGain,0,sizeof(float)*SLOTS);
-	//
-	//    /*simulated*/
-	//    for (int i = 0;i<SLOTS;i++) estimatedGain[i] = 100; 
-	//
-	//    for (int i = 0;i<SLOTS;i++) timeSlots[i] = midnight+3600*24/SLOTS*i; 
-	//    
-	//    for (int i = 0;i<SLOTS;i+=4) plan[i] = 0;
-	//    for (int i = 2;i<SLOTS;i+=4) plan[i] = 1;
-	//
-	//    /*Monte carlo scheduling*/
-	//    srand (time(NULL));
-	//    float bets[SLOTS/2];
-	//    float obets[SLOTS/2];
-	//    int numExp = 0;
-	//    do{
-	//	    for (int i = 1;i<SLOTS;i+=2) bets[i/2] = obets[i/2] = ((float)rand()*estimatedGain[i]/RAND_MAX);
-	//	    qsort(obets, SLOTS/2, sizeof(float), cmpfunc);
-	//	    float threshold = obets[SLOTS/4-1];
-	//	    for (int i = 1;i<SLOTS;i+=2) if (bets[i/2] >threshold) plan[i] = 1; else plan[i] = 0; 
-	//
-	//	    numExp = 0;
-	//	    for (int i = 1;i<SLOTS/2;i+=2) numExp+=plan[i];
-	//	    printf("Morning: %i \n",numExp);
-	//	    numExp = 0;
-	//	    for (int i = SLOTS/2+1;i<SLOTS;i+=2) numExp+=plan[i];
-	//	    printf("Evening: %i \n",numExp);
-	//
-	//	    numExp = 0;
-	//	    for (int i = 1;i<SLOTS;i+=2) numExp+=plan[i];
-	//    }while (numExp != SLOTS/4);
-	//
-	//    for (int i = 0;i<SLOTS;i++) printf("PLAN: %i %i\n",timeSlots[i],plan[i]);
-
-	uint32_t timeStamps[SLOTS];
-	unsigned char plans[SLOTS];
-	int len=0;
-	FILE* file = fopen("/localhome/strands/marathon_ws/plan.txt","r");
-	uint32_t tmd;
-	int pland;
-	int err;
-	while (feof(file)==0)
-	{
-		err = fscanf(file,"%i %i\n",&tmd,&pland);
-		timeStamps[len] = tmd;
-		plans[len] = pland;
-		len++;
-	}
-	printf("Plan length %i\n",len);
-	for (int i = 0;i<len;i++) printf("%i %i\n",timeStamps[i],plans[i]);
-	fclose(file);
 
 	while (ros::ok())
 	{
 		int position = 0;
 		ros::Time currentTime = ros::Time::now();
 		while (timeStamps[position] < currentTime.sec && position < len) position++;
-		printf("Actual plan %i %i sleep for %i\n",timeStamps[position],plans[position],timeStamps[position]-currentTime.sec);
-
-		sleep(timeStamps[position]-currentTime.sec);
-
-		if (plans[position] == 1)
+		for (int i = 0;i<(timeStamps[position]-currentTime.sec)/10;i++){
+			printf("Actual plan %i commencing in %i.\n",plans[position],timeStamps[position]-currentTime.sec-i*10);
+			sleep(10);
+		}
+		sleep((timeStamps[position]-currentTime.sec)%10+1);
+		time_t timeNow;
+		time(&timeNow);
+		char timeStr[100];
+		char fileName[100];
+		strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
+		sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
+		if (plans[position] > 0)
 		{
 			ROS_INFO("asking for a plan");
 
@@ -133,13 +97,7 @@ int main(int argc,char *argv[])
 
 				/*save the map*/
 				spatiotemporalexploration::SaveLoad saveInfo;
-				time_t timeNow;
-				time(&timeNow);
-				char timeStr[100];
-				char fileName[100];
-				strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M:%S",localtime(&timeNow));
-				sprintf(fileName,"/localhome/strands/%s.3dmap",timeStr);
-				saveInfo.request.filename = fileName; 
+								saveInfo.request.filename = fileName; 
 				saveInfo.request.order = 0;
 				saveInfo.request.lossy = false;
 				if(saveGridService.call(saveInfo) > 0) ROS_INFO("Grid save successful");

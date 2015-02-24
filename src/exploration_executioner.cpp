@@ -97,7 +97,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     spatiotemporalexploration::Reachable reachable_points;
 
-    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)//undocking was sucessful
+    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || true)//undocking was sucessful
     {
         current_goal.action_server = "move_base";
         current_goal.target_pose.header.frame_id = "map";
@@ -123,7 +123,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
             {
                 ROS_WARN("failed to reach goal!");
-                while(retries < 1 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
+                while(retries < 2 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
                 {
                     ac_nav_ptr->sendGoal(current_goal);
                     ROS_INFO("trying to recover: %d", retries);
