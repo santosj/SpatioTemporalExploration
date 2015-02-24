@@ -254,13 +254,13 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 if(last_max.value < entropies_aux[y][x])
                 {
                     last_max.value = entropies_aux[y][x];
-                    result.information += last_max.value;
                     last_max.x = x;
                     last_max.y = y;
                     //		ROS_INFO("max: %f", last_max.value);
                 }
             }
         }
+	result.information += last_max.value;
 
         final_max.x = last_max.x - radius;
         final_max.y = last_max.y - radius;
@@ -271,7 +271,6 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         local_point.pose.position.y = MIN_Y + entropies_step*(final_max.x + 0.5);
         local_point.pose.position.x = MIN_X + entropies_step*(final_max.y + 0.5);
         //        ROS_INFO("(%d,%d) -> (%f, %f)", final_max.x, final_max.y, local_point.pose.position.x, local_point.pose.position.y);
-
 
         ix[w+1] = local_point.pose.position.x;
         iy[w+1] = local_point.pose.position.y;

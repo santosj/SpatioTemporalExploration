@@ -335,7 +335,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 	CTimer timer;
 	timer.reset();
 	timer.start();
-
+	float dumInf = 0;
 	float px,py,pz,rx,ry,rz,ax,ay,az,bx,by,bz,cx,cy,cz;
 	int startIndex,ix,iy,iz,index,final,xStep,yStep,zStep;
 	unsigned char process[size];
@@ -372,7 +372,8 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 				aux[final] = 1;
 				if (d[i]==1)
 				{
-					obtainedInformation += (log2f(probs[final])-residualInformation);
+					dumInf = fmax(fmin(probs[final],maxProb),minProb);
+					obtainedInformation += -(log2f(dumInf)-residualInformation);
 				       	frelements[final].add(times,oneVal,1);	
 					probs[final] = maxProb; //else probs[final] = minProb;
 				}
@@ -451,7 +452,8 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 				//if (debug) printf("Index %06i %06i %06i %.2f %.2f %.2f %.2f\n",index,final,startIndex,bx,bx*rx+px,by*ry+py,bz*rz+pz);
 				if (aux[index] == 0){
 					aux[index] = 1;
-					obtainedInformation += log2f(1-probs[index])-residualInformation;
+					dumInf = fmax(fmin(probs[index],maxProb),minProb);
+					obtainedInformation += -(log2f(1-dumInf)-residualInformation);
 					probs[index] = minProb;
 				       	frelements[final].add(times,zeroVal,1);	
 				}
