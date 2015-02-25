@@ -4,6 +4,7 @@ using namespace std;
 
 CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int dimY,int dimZ,float cellSize)
 {
+	lastTimeStamp = 0;
 	obtainedInformation = 0;
 	minProb = 0.05;
 	maxProb = 1-minProb;
@@ -22,6 +23,7 @@ CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int 
 	probs = (float*) malloc(numCells*sizeof(float));
 	frelements = (CFrelement*) malloc(numCells*sizeof(CFrelement));
 	for (int i = 0;i<numCells;i++) probs[i] = 0.5;
+	for (int i = 0;i<numCells;i++) frelements[i].init();
 
 	//initialize the grid 'walls'
 
@@ -148,7 +150,7 @@ float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,ui
 	int startIndex =  (int)px+xDim*((int)py+yDim*((int)pz));
 	int backupIndex = startIndex;
 	float psiMax = 0.9;
-	float psiMin = -0.7;
+	float psiMin = -0.6;
 	float phiRange = M_PI;
 	if (phiRange != lastPhiRange || psiMax != lastPsiMax || psiMin != lastPsiMin || range != lastRange)
 	{
@@ -524,26 +526,71 @@ bool CFremenGrid::load(const char* filename)
 	for (int i=0;i<numCells;i++){
 		cellArray[i]->load(f);
 		cellArray[i]->signalLength = signalLength;
-	}
-	printf("FrOctomap %s loaded: name %s with %i: %ix%ix%i cells and %i observations.\n",filename,name,numCells,xDim,yDim,zDim,signalLength);
-	 */
+	}*/
+	printf("FrOctomap with %i: %ix%ix%i cells and %.0f information.\n",numCells,xDim,yDim,zDim,obtainedInformation);
 	fclose(f);
+	update();
 	return true;
 }
 
 void CFremenGrid::print(bool verbose)
 {
-/*	for (int i = 0;i<numCells;i++){
-		if (cellArray[i]->order > 0 || cellArray[i]->outliers > 0){
-			printf("Cell: %i ",i);
-			cellArray[i]->print(verbose);
+	for (int i = 0;i<numCells;i++)
+	{
+		if (frelements[i].periodicities > 0)
+		{
+			printf("Cell: %i %i ",i,frelements[i].periodicities);
+			frelements[i].print(verbose);
 		}
-	}*/
+	}
 }
 
 bool CFremenGrid::recalculate(uint32_t timestamp)
 {
-	for (int i =0;i<numCells;i++) probs[i] = frelements[i].estimate(timestamp,2);
+	if (lastTimeStamp !=timestamp)
+	{
+		lastTimeStamp =timestamp;
+		for (int i =0;i<numCells;i++) probs[i] = frelements[i].estimate(timestamp,5);
+
+		///floor
+		int minCells = 0;
+		int limCells = xDim*yDim;
+		for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
+
+		///ceiling
+		minCells = xDim*yDim*(zDim-1);
+		limCells = xDim*yDim*zDim;
+		for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
+
+		///front
+		minCells = 0;
+		limCells = yDim*xDim*zDim;
+		for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
+
+		///back
+		limCells = yDim*xDim*zDim-xDim+1;
+		minCells = xDim-1;
+		for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
+
+		minCells = 0;
+		limCells = xDim*yDim*(zDim-1);
+		for (int x = minCells;x<limCells;x++){
+			if (x%xDim == 0) x+=(yDim-1)*xDim;
+			probs[x] = 1.0;
+		}
+
+		minCells = 1;
+		limCells = xDim*yDim*(zDim-1);
+		for (int x = minCells;x<limCells;x++){
+			if (x%xDim == 0) x+=(yDim-1)*xDim;
+			probs[x] = 1.0;
+		}
+	}
+}
+
+void CFremenGrid::update()
+{
+	for (int i =0;i<numCells;i++) frelements[i].update();
 }
 
 float CFremenGrid::getObtainedInformation()
@@ -555,3 +602,10 @@ float CFremenGrid::estimate(unsigned int index,uint32_t timeStamp)
 {
 	return probs[index];
 }
+
+float CFremenGrid::getDominant(unsigned int i,int period)
+{
+	if (frelements[i].frelements[0].period == period) return  frelements[i].frelements[0].amplitude;
+	return 0; 
+}
+

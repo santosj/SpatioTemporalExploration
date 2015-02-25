@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include "CTimer.h"
 
-#define MAX_ADAPTIVE_ORDER 4
+#define MAX_ADAPTIVE_ORDER 5
 #define NUM_PERIODICITIES 24 
 #define FREMEN_AMPLITUDE_THRESHOLD 0.1
 	
@@ -36,6 +36,7 @@ class CFrelement
 	public:
 		CFrelement();
 		~CFrelement();
+		void init();
 
 		//adds a serie of measurements to the data
 		int add(uint32_t times[],unsigned char states[],int length);
@@ -52,7 +53,7 @@ class CFrelement
 		//evaluates the error of the predictions for the given times and measurements
 		int evaluate(uint32_t* times,unsigned char* signal,int length,int orderi,float* evals);
 	
-		void update(int modelOrder);
+		void update();
 		void print(bool verbose=true);
 
 		int save(FILE* file,bool lossy = false);
@@ -64,7 +65,7 @@ class CFrelement
 		SFrelement frelements[MAX_ADAPTIVE_ORDER];
 
 		float gain;
-		int measurements,order;
+		int measurements,order,periodicities;
 		uint32_t firstTime;
 		uint32_t  lastTime;
 };

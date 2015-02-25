@@ -12,10 +12,28 @@ int fremenSort(const void* i,const void* j)
 CFrelement::CFrelement()
 {
 	//initialization of the frequency set
-	//for (int i=0;i<MAX_ADAPTIVE_ORDER;i++) frelements[i].amplitude = frelements[i].phase = 0; 
+	for (int i=0;i<MAX_ADAPTIVE_ORDER;i++){
+	       	frelements[i].amplitude = frelements[i].phase = 0;
+		frelements[i].period = 1; 
+	}
 	//for (int i=0;i<NUM_PERIODICITIES;i++) frelements[i].period = (24*3600)/(i+1); 
 	gain = 0.5;
 	order = 0;
+	periodicities = 0;
+	firstTime = -1;
+	lastTime = -1;
+	measurements = 0;
+}
+
+void CFrelement::init()
+{
+	for (int i=0;i<MAX_ADAPTIVE_ORDER;i++){
+	       	frelements[i].amplitude = frelements[i].phase = 0;
+		frelements[i].period = 1; 
+	}
+	gain = 0.5;
+	order = 0;
+	periodicities = 0;
 	firstTime = -1;
 	lastTime = -1;
 	measurements = 0;
@@ -141,9 +159,34 @@ int CFrelement::evaluate(uint32_t* times,unsigned char* signal,int length,int or
 }
 
 
-/*not required in incremental version*/
-void CFrelement::update(int modelOrder)
+/*required only after loading*/
+void CFrelement::update()
 {
+	//establish amplitudes and phase shifts
+	float re,im;
+	int duration = lastTime-firstTime;
+	SFrelement tmp[NUM_PERIODICITIES];
+	for (int i=0;i<NUM_PERIODICITIES;i++) tmp[i].period = (24*3600)/(i+1); 
+	periodicities = 0;
+	for (int i = 0;i<NUM_PERIODICITIES;i++)
+	{
+		re = allFrelements[i].realStates-allFrelements[i].realBalance;
+		im = allFrelements[i].imagStates-allFrelements[i].imagBalance;
+		if (1.5*0*tmp[i].period <= duration && tmp[i].period>3600) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0;
+		if (tmp[i].amplitude < FREMEN_AMPLITUDE_THRESHOLD) tmp[i].amplitude = 0;
+		//frelements[i].amplitude = sqrt(re*re+im*im)/measurements;
+		tmp[i].phase = atan2(im,re);
+	}
+
+	//sort the spectral components
+	qsort(tmp,NUM_PERIODICITIES,sizeof(SFrelement),fremenSort);
+
+	//put them in the set P
+	memcpy(frelements,tmp,MAX_ADAPTIVE_ORDER*sizeof(SFrelement));
+	for (int i = 0;i<MAX_ADAPTIVE_ORDER;i++){
+		if (frelements[i].amplitude >=FREMEN_AMPLITUDE_THRESHOLD)periodicities++; 
+	}
+	return; 
 }
 
 /*text representation of the fremen model*/
@@ -151,10 +194,11 @@ void CFrelement::print(bool verbose)
 {
 	int errs = 0;
 	std::cout << "Model prior: " << gain << " Size: " << measurements << " ";
-	if (order > 0) std::cout  << endl;
+	if (periodicities > 0) std::cout  << endl;
 	if (verbose){
 		float ampl = gain;
-		for (int i = 0;i<order;i++){
+		for (int i = 0;i<min(periodicities,1);i++)
+		{
 			std::cout << "Frelement " << i << " " << frelements[i].amplitude << " " << frelements[i].phase << " " << frelements[i].period << endl;
 		}
 	}
@@ -165,6 +209,7 @@ float CFrelement::estimate(uint32_t time,int orderi)
 {
 	float saturation = 0.05;
 	float estimate = gain;
+
 	for (int i = 0;i<orderi;i++) estimate+=2*frelements[i].amplitude*cos(time/frelements[i].period*2*M_PI-frelements[i].phase);
 	if (estimate > 1.0-saturation) estimate =  1.0-saturation;
 	if (estimate < 0.0+saturation) estimate =  0.0+saturation;
@@ -236,12 +281,13 @@ int CFrelement::save(FILE* file,bool lossy)
 int CFrelement::load(FILE* file)
 {
 	int frk = NUM_PERIODICITIES;
-	fwrite(&frk,sizeof(uint32_t),1,file);
-	fwrite(&gain,sizeof(float),1,file);
-	fwrite(&measurements,sizeof(int),1,file);
-	fwrite(&firstTime,sizeof(uint32_t),1,file);
-	fwrite(&lastTime,sizeof(uint32_t),1,file);
-	fwrite(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
+	int koko = 0;
+	koko+=fread(&frk,sizeof(uint32_t),1,file);
+	koko+=fread(&gain,sizeof(float),1,file);
+	koko+=fread(&measurements,sizeof(int),1,file);
+	koko+=fread(&firstTime,sizeof(uint32_t),1,file);
+	koko+=fread(&lastTime,sizeof(uint32_t),1,file);
+	koko+=fread(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
 	return 0;
 }
 
