@@ -24,43 +24,7 @@ CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int 
 	frelements = (CFrelement*) malloc(numCells*sizeof(CFrelement));
 	for (int i = 0;i<numCells;i++) probs[i] = 0.5;
 	for (int i = 0;i<numCells;i++) frelements[i].init();
-
-	//initialize the grid 'walls'
-
-	///floor
-	int minCells = 0;
-	int limCells = xDim*yDim;
-	for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
-
-	///ceiling
-	minCells = xDim*yDim*(zDim-1);
-	limCells = xDim*yDim*zDim;
-	for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
-
-	///front
-	minCells = 0;
-	limCells = yDim*xDim*zDim;
-	for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
-
-	///back
-	limCells = yDim*xDim*zDim-xDim+1;
-	minCells = xDim-1;
-	for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
-
-	minCells = 0;
-	limCells = xDim*yDim*(zDim-1);
-	for (int x = minCells;x<limCells;x++){
-		 if (x%xDim == 0) x+=(yDim-1)*xDim;
-		 probs[x] = 1.0;
-	}
-
-	minCells = 1;
-	limCells = xDim*yDim*(zDim-1);
-	for (int x = minCells;x<limCells;x++){
-		 if (x%xDim == 0) x+=(yDim-1)*xDim;
-		 probs[x] = 1.0;
-	}
-	
+	buildLimits();
 	if (debug) printf("Float size: %i \n",(int)sizeof(double));
 	lastPhiRange=lastPsiMin=lastPsiMax=lastRange=numRaycasters = 0;
 	//cellArray = (CFrelement**) malloc(numCells*sizeof(CFrelement*));
@@ -530,6 +494,7 @@ bool CFremenGrid::load(const char* filename)
 	printf("FrOctomap with %i: %ix%ix%i cells and %.0f information.\n",numCells,xDim,yDim,zDim,obtainedInformation);
 	fclose(f);
 	update();
+	buildLimits();
 	return true;
 }
 
@@ -545,46 +510,50 @@ void CFremenGrid::print(bool verbose)
 	}
 }
 
+void CFremenGrid::buildLimits()
+{
+	///floor
+	int minCells = 0;
+	int limCells = xDim*yDim;
+	for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
+
+	///ceiling
+	minCells = xDim*yDim*(zDim-1);
+	limCells = xDim*yDim*zDim;
+	for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
+
+	///front
+	minCells = 0;
+	limCells = yDim*xDim*zDim;
+	for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
+
+	///back
+	limCells = yDim*xDim*zDim-xDim+1;
+	minCells = xDim-1;
+	for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
+
+	minCells = 0;
+	limCells = xDim*yDim*(zDim-1);
+	for (int x = minCells;x<limCells;x++){
+		if (x%xDim == 0) x+=(yDim-1)*xDim;
+		probs[x] = 1.0;
+	}
+
+	minCells = 1;
+	limCells = xDim*yDim*(zDim-1);
+	for (int x = minCells;x<limCells;x++){
+		if (x%xDim == 0) x+=(yDim-1)*xDim;
+		probs[x] = 1.0;
+	}
+}
+
 bool CFremenGrid::recalculate(uint32_t timestamp)
 {
 	if (lastTimeStamp !=timestamp)
 	{
 		lastTimeStamp =timestamp;
 		for (int i =0;i<numCells;i++) probs[i] = frelements[i].estimate(timestamp,5);
-
-		///floor
-		int minCells = 0;
-		int limCells = xDim*yDim;
-		for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
-
-		///ceiling
-		minCells = xDim*yDim*(zDim-1);
-		limCells = xDim*yDim*zDim;
-		for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
-
-		///front
-		minCells = 0;
-		limCells = yDim*xDim*zDim;
-		for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
-
-		///back
-		limCells = yDim*xDim*zDim-xDim+1;
-		minCells = xDim-1;
-		for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
-
-		minCells = 0;
-		limCells = xDim*yDim*(zDim-1);
-		for (int x = minCells;x<limCells;x++){
-			if (x%xDim == 0) x+=(yDim-1)*xDim;
-			probs[x] = 1.0;
-		}
-
-		minCells = 1;
-		limCells = xDim*yDim*(zDim-1);
-		for (int x = minCells;x<limCells;x++){
-			if (x%xDim == 0) x+=(yDim-1)*xDim;
-			probs[x] = 1.0;
-		}
+		buildLimits();
 	}
 }
 
