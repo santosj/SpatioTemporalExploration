@@ -19,6 +19,9 @@ class CFremenGrid
 	public:
 		CFremenGrid(float originX,float originY,float originZ,int dimX,int dimY,int dimZ,float cellSize);
 		~CFremenGrid();
+		
+		/*fills the grid borders*/
+		void buildLimits();
 
 		/*state estimation: estimates the grid for the given time*/
 		bool recalculate(uint32_t timeStamp);
