@@ -88,7 +88,7 @@ bool visualizedGrid(spatiotemporalexploration::Visualize::Request  &req, spatiot
             test_point.scale.z = 0.01 + reachability_grid_ptr[grid_ind];
             test_point.pose.position.z = test_point.scale.z/2;
             points_markers.markers.push_back(test_point);
-            grid_int++;
+            grid_ind++;
 
         }
     }
