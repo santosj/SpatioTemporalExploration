@@ -94,6 +94,8 @@ bool visualizedGrid(spatiotemporalexploration::Visualize::Request  &req, spatiot
     }
 
     reach_pub_ptr->publish(points_markers);
+
+    return true;
 }
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
