@@ -5,6 +5,11 @@ find_package(catkin REQUIRED COMPONENTS  pcl_conversions pcl_ros roscpp rospy st
 set ( CMAKE_CXX_FLAGS "-Ofast -march=native -mno-avx -ggdb")
 #set ( CMAKE_CXX_FLAGS "-ggdb")
 
+add_message_files(
+  FILES
+  Reachable.msg
+)
+
 add_service_files(
 		FILES
 		Entropy.srv
@@ -37,6 +42,7 @@ add_executable(exploration src/fremenExploration.cpp)
 add_executable(exploration_executioner src/exploration_executioner.cpp)
 add_executable(exploration_planner src/exploration_planner.cpp)
 add_executable(exploration_scheduler src/exploration_scheduler.cpp)
+add_executable(exploration_schedule_creator src/exploration_schedule_creator.cpp)
 #add_executable(load src/load.cpp)
 add_executable(flat src/flat_simulation.cpp)
 add_executable(flat_generate_grids src/flat_generate_grids.cpp)
@@ -70,6 +76,7 @@ target_link_libraries(exploration ${catkin_LIBRARIES})
 target_link_libraries(exploration_executioner ${catkin_LIBRARIES})
 target_link_libraries(exploration_planner ${catkin_LIBRARIES})
 target_link_libraries(exploration_scheduler ${catkin_LIBRARIES})
+target_link_libraries(exploration_schedule_creator ${catkin_LIBRARIES})
 target_link_libraries(grid_planning ${catkin_LIBRARIES})
 target_link_libraries(flat ${catkin_LIBRARIES})
 target_link_libraries(flat_generate_grids ${catkin_LIBRARIES})

@@ -191,6 +191,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 
 bool estimateEntropy(spatiotemporalexploration::Entropy::Request  &req, spatiotemporalexploration::Entropy::Response &res)
 {
+	grid->recalculate(req.t);	
 	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
 	res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,1.0);
 	return true;
@@ -234,13 +235,15 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
 	float estimate,minP,maxP;
 	minP = req.minProbability;
 	maxP = req.maxProbability;
-		
+	if (req.stamp != 0) grid->recalculate(req.stamp);
+
 	//iterate over the cells' probabilities 
 	for(float z = minZ;z<maxZ;z+=resolution){
 		for(float y = minY;y<maxY;y+=resolution){
 			for(float x = minX;x<maxX;x+=resolution){
 				if (req.type == 0) estimate = grid->estimate(cnt,0);
 				if (req.type == 1) estimate = grid->aux[cnt];
+				if (req.type == 2) estimate = grid->getDominant(cnt,req.period);
 				
 				if(estimate > minP && estimate < maxP)
 				{

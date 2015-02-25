@@ -22,6 +22,10 @@ class CFremenGrid
 
 		/*state estimation: estimates the grid for the given time*/
 		bool recalculate(uint32_t timeStamp);
+	
+		/*repopulates the set P - use to recover after map load*/
+		void update();
+
 		float getObtainedInformation();
 
 		float estimate(float x,float y,float z,uint32_t timeStamp);
@@ -34,6 +38,8 @@ class CFremenGrid
 		bool load(const char*name);
 
 		float estimate(unsigned int index,uint32_t timeStamp);
+		float getDominant(unsigned int index,int period);
+
 		float incorporate(float *x,float *y,float *z,float *d,int size,uint32_t t);
 		int getIndex(float x,float y,float z);
 
@@ -48,6 +54,7 @@ class CFremenGrid
 		int numCells;
 		bool debug;
 
+		uint32_t lastTimeStamp;
 		float minProb,maxProb,residualEntropy,residualInformation;
 		float lastPhiRange,lastPsiMin,lastPsiMax,lastRange;
 		int *raycasters;
