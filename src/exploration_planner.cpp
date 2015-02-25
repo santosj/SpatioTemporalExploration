@@ -109,7 +109,7 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
         {
             for(int i = 0; i < numCellsX; i++)
             {
-                fscanf(file, "%03i %03i %lf\n",&dummyX,&dummyY,&reachability_grid_ptr[grid_ind]);
+                int fuck=fscanf(file, "%03i %03i %f\n",&dummyX,&dummyY,&reachability_grid_ptr[grid_ind]);
                 grid_ind++;
             }
         }
@@ -175,7 +175,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         {
             for(int i = 0; i < numCellsX; i++)
             {
-                fscanf(file, "%03i %03i %lf\n",i,j,reachability_grid_ptr[grid_ind]);
+                fprintf(file, "%03i %03i %f\n",i,j,reachability_grid_ptr[grid_ind]);
                 grid_ind++;
             }
         }
