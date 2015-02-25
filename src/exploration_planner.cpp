@@ -103,13 +103,13 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
     if (file!=NULL)
     {
         ROS_INFO("loading reachability grid...");
-
+        int dummyX,dummyY;
         int grid_ind = 0;
         for(int j = 0; j < numCellsY; j++)
         {
             for(int i = 0; i < numCellsX; i++)
             {
-                fscanf(file, "%f\n", &reachability_grid_ptr[grid_ind]);
+                fscanf(file, "%03i %03i %lf\n",&dummyX,&dummyY,&reachability_grid_ptr[grid_ind]);
                 grid_ind++;
             }
         }
@@ -175,7 +175,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         {
             for(int i = 0; i < numCellsX; i++)
             {
-                fprintf(file,"%.lf\n", reachability_grid_ptr[grid_ind]);
+                fscanf(file, "%03i %03i %lf\n",i,j,reachability_grid_ptr[grid_ind]);
                 grid_ind++;
             }
         }
