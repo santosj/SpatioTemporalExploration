@@ -54,6 +54,38 @@ ros::ServiceClient *entropy_client_ptr;
 
 ros::Publisher *points_pub_ptr, *max_pub_ptr;
 
+bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
+{
+
+    FILE* file = fopen(req.filename.c_str(),"r");
+    if (file!=NULL)
+    {
+        ROS_INFO("loading reachability grid...");
+
+        int grid_ind = 0;
+        for(int j = 0; j < numCellsY; j++)
+        {
+            for(int i = 0; i < numCellsX; i++)
+            {
+                fscanf(file, "%f\n", &reachability_grid_ptr[grid_ind]);
+                grid_ind++;
+            }
+        }
+
+        fclose(file);
+        res.result = true;
+    }
+    else
+    {
+        ROS_INFO("failed to load grid...");
+        res.result = false;
+    }
+
+    return true;
+
+}
+
+
 void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg)
 {
     int nr_points = (int) msg->x.size();
@@ -71,17 +103,48 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
         if(msg->value[i])//true is reachable
         {
-		reachability_grid_ptr[ind] += 0.2;
-		if(reachability_grid_ptr[ind] > 1.0)reachability_grid_ptr[ind] = 1.0;
+            reachability_grid_ptr[ind] += 0.2;
+            if(reachability_grid_ptr[ind] > 1.0)reachability_grid_ptr[ind] = 1.0;
         }
         else
-	{
-		reachability_grid_ptr[ind] -= 0.2;
-		//reachability_grid_ptr[ind] -= 1.2;
-		if (reachability_grid_ptr[ind] < 0.0) reachability_grid_ptr[ind] = 0.0;
-	}
+        {
+            reachability_grid_ptr[ind] -= 0.2;
+            //reachability_grid_ptr[ind] -= 1.2;
+            if (reachability_grid_ptr[ind] < 0.0) reachability_grid_ptr[ind] = 0.0;
+        }
 
     }
+
+    ROS_INFO("saving reachability grid...");
+
+    time_t timeNow;
+    time(&timeNow);
+    char timeStr[100];
+    char fileName[100];
+    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
+    sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
+
+    FILE* file = fopen(fileName,"w");
+
+    if (file!=NULL)
+    {
+        int grid_ind = 0;
+        for(int j = 0; j < numCellsY; j++)
+        {
+            for(int i = 0; i < numCellsX; i++)
+            {
+                fprintf(file,"%.lf\n", reachability_grid_ptr[grid_ind]);
+                grid_ind++;
+            }
+        }
+
+        fclose(file);
+    }
+    else
+    {
+        ROS_ERROR("failed to save grid");
+    }
+
 
 
 }
@@ -153,71 +216,71 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     //update grid
     int ind = 0;
-        for(int j = 0; j < numCellsY; j++)
-	{
-		for(int i = 0; i < numCellsX; i++)
-		{
+    for(int j = 0; j < numCellsY; j++)
+    {
+        for(int i = 0; i < numCellsX; i++)
+        {
 
-			//get plan
-			//            plan_srv.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
-			//            plan_srv.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
+            //get plan
+            //            plan_srv.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
+            //            plan_srv.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
 
-			//            plan_srv.request.goal.header.frame_id = "/map";
+            //            plan_srv.request.goal.header.frame_id = "/map";
 
-			//            if(plan_client_ptr->call(plan_srv))//path received
-			//            {
-			//                if((int) plan_srv.response.plan.poses.size() > 0)//goal is reachable
-			//                {
+            //            if(plan_client_ptr->call(plan_srv))//path received
+            //            {
+            //                if((int) plan_srv.response.plan.poses.size() > 0)//goal is reachable
+            //                {
 
-			//ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
-			//            ROS_INFO("reachable? %f", reachability_grid_ptr[ind]);
-			if(reachability_grid_ptr[ind] > 0.0)
-			{
+            //ROS_INFO("Goal reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+            //            ROS_INFO("reachable? %f", reachability_grid_ptr[ind]);
+            if(reachability_grid_ptr[ind] > 0.0)
+            {
 
-				//Entropy Service Call:
-				entropy_srv.request.t = goal->t;
-				entropy_srv.request.x = MIN_X + entropies_step*(i+0.5);//plan_srv.request.goal.pose.position.x;
-				entropy_srv.request.y = MIN_Y + entropies_step*(j+0.5);//plan_srv.request.goal.pose.position.y;
+                //Entropy Service Call:
+                entropy_srv.request.t = goal->t;
+                entropy_srv.request.x = MIN_X + entropies_step*(i+0.5);//plan_srv.request.goal.pose.position.x;
+                entropy_srv.request.y = MIN_Y + entropies_step*(j+0.5);//plan_srv.request.goal.pose.position.y;
 
-				if(entropy_client_ptr->call(entropy_srv) > 0)
-					entropies_aux[i + radius][j + radius] = entropy_srv.response.value * reachability_grid_ptr[ind];
-				else
-				{
-					ROS_ERROR("entropy service failed");
-					entropies_aux[i + radius][j + radius] = 0;
-				}
-				//                }
-				//                else
-				//                {
-				//                    //ROS_INFO("Goal NOT reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
-				//                    entropies_aux[i + radius][j + radius] = 0;
-				//                }
-				//            }
-				//            else
-				//            {
-				//                //ROS_INFO("Goal NOT reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
-				//                entropies_aux[i + radius][j + radius] = 0;
-				//            }
-				entropy_srv.response.value = entropies_aux[i + radius][j + radius];
-				test_point.pose.position.x = MIN_X + entropies_step*(i+0.5);//plan_srv.request.goal.pose.position.x;
-				test_point.pose.position.y = MIN_Y + entropies_step*(j+0.5);//plan_srv.request.goal.pose.position.y;
-				test_point.id = ind;
-				test_point.color.r = 0.0;
-				test_point.color.g = 1.0 - (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
-				test_point.color.b = (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
-				test_point.scale.z = 0.01 + (entropies_step * entropy_srv.response.value)/MAX_ENTROPY;
-				test_point.pose.position.z = test_point.scale.z/2;
-				points_markers.markers.push_back(test_point);
+                if(entropy_client_ptr->call(entropy_srv) > 0)
+                    entropies_aux[i + radius][j + radius] = entropy_srv.response.value * reachability_grid_ptr[ind];
+                else
+                {
+                    ROS_ERROR("entropy service failed");
+                    entropies_aux[i + radius][j + radius] = 0;
+                }
+                //                }
+                //                else
+                //                {
+                //                    //ROS_INFO("Goal NOT reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+                //                    entropies_aux[i + radius][j + radius] = 0;
+                //                }
+                //            }
+                //            else
+                //            {
+                //                //ROS_INFO("Goal NOT reachable! -> path size = %d" , (int) plan_srv.response.plan.poses.size());
+                //                entropies_aux[i + radius][j + radius] = 0;
+                //            }
+                entropy_srv.response.value = entropies_aux[i + radius][j + radius];
+                test_point.pose.position.x = MIN_X + entropies_step*(i+0.5);//plan_srv.request.goal.pose.position.x;
+                test_point.pose.position.y = MIN_Y + entropies_step*(j+0.5);//plan_srv.request.goal.pose.position.y;
+                test_point.id = ind;
+                test_point.color.r = 0.0;
+                test_point.color.g = 1.0 - (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
+                test_point.color.b = (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
+                test_point.scale.z = 0.01 + (entropies_step * entropy_srv.response.value)/MAX_ENTROPY;
+                test_point.pose.position.z = test_point.scale.z/2;
+                points_markers.markers.push_back(test_point);
 
-				ros::spinOnce();
-		}
-			else
-			{
-				entropies_aux[i + radius][j + radius] = 0.0;
-			}
-			ind++;
-		}
-	}
+                ros::spinOnce();
+            }
+            else
+            {
+                entropies_aux[i + radius][j + radius] = 0.0;
+            }
+            ind++;
+        }
+    }
 
     /*** Mask ***/
     //TODO  - mask inicialization in the main function
@@ -260,7 +323,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 }
             }
         }
-	result.information += last_max.value;
+        result.information += last_max.value;
 
         final_max.x = last_max.x - radius;
         final_max.y = last_max.y - radius;
@@ -353,6 +416,8 @@ int main(int argc,char *argv[])
     plan_client_ptr = &plan_client;
     nav_msgs::GetPlan plan;
 
+    ros::ServiceServer load_service = n.advertiseService("/planner/load", loadGrid);
+
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_grid", 100);
     points_pub_ptr = &points_pub;
 
@@ -366,7 +431,7 @@ int main(int argc,char *argv[])
 
     //reachability grid
     reachability_grid_ptr = new float[numCellsX*numCellsY];
-//    memset(reachability_grid_ptr, 1.0 , sizeof(reachability_grid_ptr));
+    //    memset(reachability_grid_ptr, 1.0 , sizeof(reachability_grid_ptr));
     //reachability_grid_ptr = reachability_grid;
 
     plan.request.start.pose.position.x = -1.0;
@@ -381,29 +446,29 @@ int main(int argc,char *argv[])
 
     ROS_INFO("initializing reachability grid");
     int grid_ind = 0;
-        for(int j = 0; j < numCellsY; j++)
-	{
-		for(int i = 0; i < numCellsX; i++)
-		{
-			plan.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
-			plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
-			if(plan_client.call(plan))//path received
-			{
-				if((int) plan.response.plan.poses.size() > 0){//goal is reachable
-					reachability_grid_ptr[grid_ind] = 1.0;
-					printf("aha %i\n",grid_ind);
-				}
-				else
-					reachability_grid_ptr[grid_ind] = 0.0;
-			}
-			else
-			{
-				ROS_ERROR("failed to call make_plan service");
-				reachability_grid_ptr[grid_ind] = 0.0;
-			}
-			grid_ind++;
-		}
-	}
+    for(int j = 0; j < numCellsY; j++)
+    {
+        for(int i = 0; i < numCellsX; i++)
+        {
+            plan.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
+            plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
+            if(plan_client.call(plan))//path received
+            {
+                if((int) plan.response.plan.poses.size() > 0){//goal is reachable
+                    reachability_grid_ptr[grid_ind] = 1.0;
+                    printf("aha %i\n",grid_ind);
+                }
+                else
+                    reachability_grid_ptr[grid_ind] = 0.0;
+            }
+            else
+            {
+                ROS_ERROR("failed to call make_plan service");
+                reachability_grid_ptr[grid_ind] = 0.0;
+            }
+            grid_ind++;
+        }
+    }
     ROS_INFO("reachability grid done! starting server...");
 
     Server server(n, "planner", boost::bind(&execute, _1, &server), false);
