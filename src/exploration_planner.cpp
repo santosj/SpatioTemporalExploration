@@ -52,7 +52,48 @@ tf::TransformListener *tf_listener_ptr;
 
 ros::ServiceClient *entropy_client_ptr;
 
-ros::Publisher *points_pub_ptr, *max_pub_ptr;
+ros::Publisher *points_pub_ptr, *max_pub_ptr, *reach_pub_ptr;
+
+bool visualizedGrid(spatiotemporalexploration::Visualize::Request  &req, spatiotemporalexploration::Visualize::Response &res)
+{
+
+    //Markers Initialization
+    visualization_msgs::MarkerArray points_markers;
+
+    visualization_msgs::Marker test_point;
+    test_point.header.frame_id = "/map";
+    test_point.header.stamp = ros::Time::now();
+    test_point.ns = "my_namespace";
+    test_point.action = visualization_msgs::Marker::ADD;
+    test_point.type = visualization_msgs::Marker::CUBE;
+    test_point.color.a = 0.8;
+    test_point.pose.position.z = 0.1;
+    test_point.pose.orientation.w = 1.0;
+    test_point.scale.x = entropies_step;
+    test_point.scale.y = entropies_step;
+
+    ROS_INFO("publishing reachability markers...");
+
+    int grid_ind = 0;
+    for(int j = 0; j < numCellsY; j++)
+    {
+        for(int i = 0; i < numCellsX; i++)
+        {
+            test_point.pose.position.x = MIN_X + entropies_step*(i+0.5);
+            test_point.pose.position.y = MIN_Y + entropies_step*(j+0.5);
+            test_point.id = grid_ind;
+            test_point.color.r = 1.0 - reachability_grid_ptr[grid_ind];
+            test_point.color.g = reachability_grid_ptr[grid_ind];
+            test_point.color.b = 0.0;
+            test_point.scale.z = 0.01 + reachability_grid_ptr[grid_ind];
+            test_point.pose.position.z = test_point.scale.z/2;
+            points_markers.markers.push_back(test_point);
+
+        }
+    }
+
+    reach_pub_ptr->publish(points_markers);
+}
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -416,10 +457,14 @@ int main(int argc,char *argv[])
     plan_client_ptr = &plan_client;
     nav_msgs::GetPlan plan;
 
-    ros::ServiceServer load_service = n.advertiseService("/planner/load", loadGrid);
+    ros::ServiceServer vis_service = n.advertiseService("/reachability/load", loadGrid);
+    ros::ServiceServer load_service = n.advertiseService("/reachability/visualize", visualizedGrid);
 
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_grid", 100);
     points_pub_ptr = &points_pub;
+
+    ros::Publisher reach_pub = n.advertise<visualization_msgs::MarkerArray>("/reach_grid", 100);
+    reach_pub_ptr = &reach_pub;
 
     ros::Publisher max_pub = n.advertise<visualization_msgs::MarkerArray>("/maximas", 100);
     max_pub_ptr = &max_pub;
