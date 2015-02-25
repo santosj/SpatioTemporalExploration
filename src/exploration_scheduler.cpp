@@ -25,7 +25,7 @@ void loadPlan(const char* name)
 	while (feof(file)==0)
 	{
 		err = fscanf(file,"%s %i %i\n",realTime,&tmd,&pland);
-		timeStamps[len] = tmd;
+		timeStamps[len] = tmd+86400;
 		plans[len] = pland;
 		patrols+=plans[len];
 		//printf("%s %i %i\n",realTime,timeStamps[len],plans[len]);
