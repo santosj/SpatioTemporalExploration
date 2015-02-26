@@ -21,7 +21,7 @@ class CFremenGrid
 		~CFremenGrid();
 		
 		/*fills the grid borders*/
-		void buildLimits();
+		void buildLimits(float* grid);
 
 		/*state estimation: estimates the grid for the given time*/
 		bool recalculate(uint32_t timeStamp);
@@ -41,6 +41,7 @@ class CFremenGrid
 		bool load(const char*name);
 
 		float estimate(unsigned int index,uint32_t timeStamp);
+		float retrieve(unsigned int index);
 		float getDominant(unsigned int index,int period);
 
 		float incorporate(float *x,float *y,float *z,float *d,int size,uint32_t t);
@@ -53,6 +54,7 @@ class CFremenGrid
 		//grid dimensions
 		int xDim,yDim,zDim;
 		float* probs;	
+		float* predicted;	
 		char *aux;
 		int numCells;
 		bool debug;

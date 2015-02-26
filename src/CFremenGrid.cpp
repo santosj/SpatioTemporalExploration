@@ -21,10 +21,12 @@ CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int 
 	numCells = xDim*yDim*zDim;
 	aux = (char*) malloc(numCells*sizeof(char));
 	probs = (float*) malloc(numCells*sizeof(float));
+	predicted = (float*) malloc(numCells*sizeof(float));
 	frelements = (CFrelement*) malloc(numCells*sizeof(CFrelement));
 	for (int i = 0;i<numCells;i++) probs[i] = 0.5;
 	for (int i = 0;i<numCells;i++) frelements[i].init();
-	buildLimits();
+	buildLimits(probs);
+	buildLimits(predicted);
 	if (debug) printf("Float size: %i \n",(int)sizeof(double));
 	lastPhiRange=lastPsiMin=lastPsiMax=lastRange=numRaycasters = 0;
 	//cellArray = (CFrelement**) malloc(numCells*sizeof(CFrelement*));
@@ -37,6 +39,7 @@ CFremenGrid::~CFremenGrid()
 	free(raycasters);
 	free(aux);
 	free(probs);
+	free(predicted);
 	free(frelements);
 	//for (int i=0;i<numCells;i++) free(cellArray[i]);
 	//free(cellArray);
@@ -281,7 +284,7 @@ float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,ui
 		for (int j = rayIndex+1;j<castLength&&cellFree;j++)
 		{
 			cellIndex = startIndex+raycasters[j];
-			prob = probs[cellIndex];
+			prob = predicted[cellIndex];
 			cellFree = prob < 0.7;
 			if (aux[cellIndex] == 0){
 				aux[cellIndex] = 1;
@@ -494,7 +497,8 @@ bool CFremenGrid::load(const char* filename)
 	printf("FrOctomap with %i: %ix%ix%i cells and %.0f information.\n",numCells,xDim,yDim,zDim,obtainedInformation);
 	fclose(f);
 	update();
-	buildLimits();
+	buildLimits(probs);
+	buildLimits(predicted);
 	return true;
 }
 
@@ -510,40 +514,40 @@ void CFremenGrid::print(bool verbose)
 	}
 }
 
-void CFremenGrid::buildLimits()
+void CFremenGrid::buildLimits(float* grid)
 {
 	///floor
 	int minCells = 0;
 	int limCells = xDim*yDim;
-	for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
+	for (int x = minCells;x<limCells;x++) grid[x] = 1.0;
 
 	///ceiling
 	minCells = xDim*yDim*(zDim-1);
 	limCells = xDim*yDim*zDim;
-	for (int x = minCells;x<limCells;x++) probs[x] = 1.0;
+	for (int x = minCells;x<limCells;x++) grid[x] = 1.0;
 
 	///front
 	minCells = 0;
 	limCells = yDim*xDim*zDim;
-	for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
+	for (int x = minCells;x<limCells;x+=xDim) grid[x] = 1.0;
 
 	///back
 	limCells = yDim*xDim*zDim-xDim+1;
 	minCells = xDim-1;
-	for (int x = minCells;x<limCells;x+=xDim) probs[x] = 1.0;
+	for (int x = minCells;x<limCells;x+=xDim) grid[x] = 1.0;
 
 	minCells = 0;
 	limCells = xDim*yDim*(zDim-1);
 	for (int x = minCells;x<limCells;x++){
 		if (x%xDim == 0) x+=(yDim-1)*xDim;
-		probs[x] = 1.0;
+		grid[x] = 1.0;
 	}
 
 	minCells = 1;
 	limCells = xDim*yDim*(zDim-1);
 	for (int x = minCells;x<limCells;x++){
 		if (x%xDim == 0) x+=(yDim-1)*xDim;
-		probs[x] = 1.0;
+		grid[x] = 1.0;
 	}
 }
 
@@ -552,8 +556,8 @@ bool CFremenGrid::recalculate(uint32_t timestamp)
 	if (lastTimeStamp !=timestamp)
 	{
 		lastTimeStamp =timestamp;
-		for (int i =0;i<numCells;i++) probs[i] = frelements[i].estimate(timestamp,5);
-		buildLimits();
+		for (int i =0;i<numCells;i++) predicted[i] = frelements[i].estimate(timestamp,5);
+		buildLimits(predicted);
 	}
 }
 
@@ -569,8 +573,14 @@ float CFremenGrid::getObtainedInformation()
 
 float CFremenGrid::estimate(unsigned int index,uint32_t timeStamp)
 {
+	return predicted[index];
+}
+
+float CFremenGrid::retrieve(unsigned int index)
+{
 	return probs[index];
 }
+
 
 float CFremenGrid::getDominant(unsigned int i,int period)
 {
