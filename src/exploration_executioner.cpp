@@ -78,7 +78,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     dynamic_reconfigure::Config conf;
 
     double_param.name = "yaw_goal_tolerance";
-    double_param.value = 3.0;
+    double_param.value = 6.3;
     conf.doubles.push_back(double_param);
 
     srv_req.config = conf;
