@@ -42,6 +42,12 @@ actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction
 
 ros::Publisher *reach_pub_ptr;
 
+//Dynamic Reconfigure
+dynamic_reconfigure::ReconfigureRequest srv_req;
+dynamic_reconfigure::ReconfigureResponse srv_resp;
+dynamic_reconfigure::DoubleParameter double_param;
+dynamic_reconfigure::Config conf;
+
 void movePtu(float pan,float tilt)
 {
     ptuMovementFinished = 0;
@@ -70,6 +76,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     ROS_INFO("received new plan");
     as->acceptNewGoal();
     //as->setPreempted();
+
+    double_param.name = "yaw_goal_tolerance";
+    double_param.value = 6.3;
+    conf.doubles.push_back(double_param);
 
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;
     spatiotemporalexploration::ExecutionFeedback feedback;
@@ -259,15 +269,6 @@ int main(int argc,char *argv[])
     ros::ServiceClient visualize_client = n.serviceClient<spatiotemporalexploration::Visualize>("/fremenGrid/visualize");
     visualize_client_ptr = &visualize_client;
 
-    //Dynamic Reconfigure
-    dynamic_reconfigure::ReconfigureRequest srv_req;
-    dynamic_reconfigure::ReconfigureResponse srv_resp;
-    dynamic_reconfigure::DoubleParameter double_param;
-    dynamic_reconfigure::Config conf;
-
-    double_param.name = "yaw_goal_tolerance";
-    double_param.value = 3.0;
-    conf.doubles.push_back(double_param);
 
     srv_req.config = conf;
 
