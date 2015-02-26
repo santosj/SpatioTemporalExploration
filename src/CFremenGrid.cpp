@@ -502,6 +502,27 @@ bool CFremenGrid::load(const char* filename)
 	return true;
 }
 
+bool CFremenGrid::loadHeader(const char* filename)
+{
+	int ret = 0;
+	FILE* f=fopen(filename,"r");
+	if (f == NULL){
+		printf("FrOctomap %s not found, aborting load.\n",filename);
+		return false;
+	}
+	ret = fread(&xDim,sizeof(int),1,f);
+	ret = fread(&yDim,sizeof(int),1,f);
+	ret = fread(&zDim,sizeof(int),1,f);
+	ret = fread(&oX,sizeof(float),1,f);
+	ret = fread(&oY,sizeof(float),1,f);
+	ret = fread(&oZ,sizeof(float),1,f);
+	ret = fread(&resolution,sizeof(float),1,f);
+	ret = fread(&obtainedInformation,sizeof(float),1,f);
+	numCells = xDim*yDim*zDim;
+	fclose(f);
+	return true;
+}
+
 void CFremenGrid::print(bool verbose)
 {
 	for (int i = 0;i<numCells;i++)

@@ -39,6 +39,7 @@ class CFremenGrid
 		void print(bool verbose);
 		void save(const char*name,bool lossy = false,int forceOrder = -1);
 		bool load(const char*name);
+		bool loadHeader(const char*name);
 
 		float estimate(unsigned int index,uint32_t timeStamp);
 		float retrieve(unsigned int index);
