@@ -25,9 +25,9 @@ void loadPlan(const char* name)
 	while (feof(file)==0)
 	{
 		err = fscanf(file,"%s %i %i\n",realTime,&tmd,&pland);
-		timeStamps[len] = tmd+86400;
+		timeStamps[len] = tmd;
 		plans[len] = pland;
-		patrols+=plans[len];
+		patrols+= (plans[len]>0);
 		//printf("%s %i %i\n",realTime,timeStamps[len],plans[len]);
 		len++;
 	}
@@ -80,7 +80,8 @@ int main(int argc,char *argv[])
 
 			//asks for a plan
 			plan_goal.max_loc = 10; //number ao local maximas
-			plan_goal.t = timeStamps[position]; //timestamp
+			if (plans[position] == 2) plan_goal.t = 0;
+			if (plans[position] == 1) plan_goal.t = timeStamps[position];
 			ac_plan.sendGoal(plan_goal);
 			ac_plan.waitForResult();//timeout?
 

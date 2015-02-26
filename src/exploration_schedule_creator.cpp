@@ -36,7 +36,7 @@ int main(int argc,char *argv[])
 	/*the scheduling part*/
 	ros::Time currentTime = ros::Time::now();
 	printf("TIME: %i\n",currentTime.sec);
-	uint32_t midnight = (currentTime.sec/(24*3600)+0)*24*3600; //remove +1 to plan retrospectively
+	uint32_t midnight = (currentTime.sec/(24*3600)+1)*24*3600; //remove +1 to plan retrospectively
 	printf("MIDNIGHT: %i %i\n",midnight,midnight-currentTime.sec);
 
 
@@ -54,54 +54,79 @@ int main(int argc,char *argv[])
 	for (int i = 2;i<SLOTS;i+=4) plan[i] = 2;
 
 	ROS_INFO("asking for a plan");
+	if (argc == 2){
+		FILE* file = fopen(argv[1],"w");
+		for (int i = 0;i<SLOTS;i++)
+		{
+			if (plan[i] == 1){
+				plan_goal.max_loc = 10;
+				plan_goal.t = timeSlots[i];
+				ac_plan.sendGoal(plan_goal);
+				ac_plan.waitForResult();
 
-	FILE* file = fopen(argv[1],"w");
-	for (int i = 0;i<SLOTS;i++)
-	{
-		if (plan[i] == 1){
-			plan_goal.max_loc = 10;
-			plan_goal.t = timeSlots[i];
-			ac_plan.sendGoal(plan_goal);
-			ac_plan.waitForResult();
-
-			if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-			{
-				printf("%i %.f\n",timeSlots[i],ac_plan.getResult()->information);
-				fprintf(file,"%.f\n",ac_plan.getResult()->information);
+				if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+				{
+					printf("%i %.f\n",timeSlots[i],ac_plan.getResult()->information);
+					fprintf(file,"%.f\n",ac_plan.getResult()->information);
+				}
+				else
+				{
+					ROS_INFO("plan failed!");
+				}
+				ros::spinOnce();
 			}
-			else
-			{
-				ROS_INFO("plan failed!");
-			}
-			ros::spinOnce();
 		}
+		fclose(file);
 	}
-	fclose(file);
-	//
-	//    /*Monte carlo scheduling*/
-	//    srand (time(NULL));
-	//    float bets[SLOTS/2];
-	//    float obets[SLOTS/2];
-	//    int numExp = 0;
-	//    do{
-	//	    for (int i = 1;i<SLOTS;i+=2) bets[i/2] = obets[i/2] = ((float)rand()*estimatedGain[i]/RAND_MAX);
-	//	    qsort(obets, SLOTS/2, sizeof(float), cmpfunc);
-	//	    float threshold = obets[SLOTS/4-1];
-	//	    for (int i = 1;i<SLOTS;i+=2) if (bets[i/2] >threshold) plan[i] = 1; else plan[i] = 0; 
-	//
-	//	    numExp = 0;
-	//	    for (int i = 1;i<SLOTS/2;i+=2) numExp+=plan[i];
-	//	    printf("Morning: %i \n",numExp);
-	//	    numExp = 0;
-	//	    for (int i = SLOTS/2+1;i<SLOTS;i+=2) numExp+=plan[i];
-	//	    printf("Evening: %i \n",numExp);
-	//
-	//	    numExp = 0;
-	//	    for (int i = 1;i<SLOTS;i+=2) numExp+=plan[i];
-	//    }while (numExp != SLOTS/4);
-	//
-	//    for (int i = 0;i<SLOTS;i++) printf("PLAN: %i %i\n",timeSlots[i],plan[i]);
+	if (argc == 3){
+		FILE* entrop = fopen(argv[1],"r");
+		float dummy = 0;
+		for (int i = 1;i<SLOTS;i+=2)
+		{
+			int foo = fscanf(entrop,"%f\n",&dummy);
+			estimatedGain[i]=dummy;
+			printf("%f\n",estimatedGain[i]);
+		}	
+		fclose(entrop);
+		/*Monte carlo scheduling*/
+		srand (time(NULL));
+		float bets[SLOTS/2];
+		float obets[SLOTS/2];
+		int numExpMor = 0;
+		int numExpEve = 0;
+		int numExpTot = 0;
+		float numEntMor = 0;
+		float numEntEve = 0;
+		do{
+			for (int i = 1;i<SLOTS;i+=2) bets[i/2] = obets[i/2] = ((float)rand()*estimatedGain[i]/RAND_MAX);
+			qsort(obets, SLOTS/2, sizeof(float), cmpfunc);
+			float threshold = obets[SLOTS/4-1];
+			for (int i = 1;i<SLOTS;i+=2) if (bets[i/2] >threshold) plan[i] = 1; else plan[i] = 0; 
 
+			numExpMor = 0;
+			numEntMor = 0;
+			for (int i = 1;i<SLOTS/2;i+=2){
+				numExpMor+=plan[i];
+				numEntMor+=estimatedGain[i];
+			}
+			numExpEve = 0;
+			numEntEve = 0;
+			for (int i = SLOTS/2+1;i<SLOTS;i+=2){
+				numExpEve+=plan[i];
+				numEntEve+=estimatedGain[i];
+			}
+
+			numExpTot = 0;
+			for (int i = 1;i<SLOTS;i+=2) numExpTot+=plan[i];
+		}while (numExpTot != SLOTS/4);
+
+		for (int i = 0;i<SLOTS;i++) printf("PLAN: %02i:%02i %i %i\n",i*24/SLOTS,(i%(SLOTS/24))*(60/(SLOTS/24)),timeSlots[i],plan[i]);
+		FILE *planf = fopen(argv[2],"w");
+		for (int i = 0;i<SLOTS;i++) fprintf(planf,"%02i:%02i %i %i\n",i*24/SLOTS,(i%(SLOTS/24))*(60/(SLOTS/24)),timeSlots[i],plan[i]);
+		fclose(planf);
+		printf("Morning: %i %.f\n",numExpMor,numEntMor);
+		printf("Evening: %i %.f\n",numExpEve,numEntEve);
+	}
 
 
 	/*uint32_t timeStamps[SLOTS];

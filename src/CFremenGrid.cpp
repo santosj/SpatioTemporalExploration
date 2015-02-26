@@ -558,8 +558,8 @@ bool CFremenGrid::recalculate(uint32_t timestamp)
 	{
 		lastTimeStamp =timestamp;
 		for (int i =0;i<numCells;i++) predicted[i] = frelements[i].estimate(timestamp,5);
-		buildLimits(predicted);
 	}
+	buildLimits(predicted);
 }
 
 void CFremenGrid::update()
