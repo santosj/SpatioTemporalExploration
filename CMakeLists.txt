@@ -85,7 +85,7 @@ target_link_libraries(grid_planning ${catkin_LIBRARIES})
 target_link_libraries(flat ${catkin_LIBRARIES})
 target_link_libraries(flat_generate_grids ${catkin_LIBRARIES})
 target_link_libraries(flat_diff ${catkin_LIBRARIES})
-target_link_libraries(frontier_exploration ${catkin_LIBRARIES})
+target_link_libraries(frontier_exploration ${catkin_LIBRARIES} SDL)
 
 
 
