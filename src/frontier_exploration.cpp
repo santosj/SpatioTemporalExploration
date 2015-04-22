@@ -3,7 +3,9 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/Twist.h>
 #include <tf/transform_listener.h>
-#include <SDL/SDL.h>
+#include "CRawImage.h"
+#include "CGui.h"
+
 
 using namespace std;
 
@@ -11,84 +13,103 @@ tf::TransformListener *tf_listener_ptr;
 ros::Publisher *vel_pub_ptr;
 
 //float a[widht*height];
-unsigned int width, height;
-float *grid, *field;
+unsigned int width, height, widthField = 304, heightField = 352;
+unsigned int scaleX, scaleY;
+
+float *grid, *field0, *field1;
+CRawImage *image;
+CGui* gui;
 bool received_map = false;
 
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    ROS_INFO("received new map");
-    width = msg->info.width;
-    height = msg->info.height;
+    ROS_INFO("Received new map -> %d x %d", msg->info.width, msg->info.height);
+
 
     if(!received_map)
-        memset(&field, 0, width*height*sizeof(float));
+    {
+        width = msg->info.width;
+        height = msg->info.height;
+        field0 = new float[widthField*heightField];
+        field1 = new float[widthField*heightField];
+        grid = new float[width*height];
+        memset(field0, 0, (widthField)*(heightField)*sizeof(float));
+        memset(field1, 0, (widthField)*(heightField)*sizeof(float));
+        image = new CRawImage(widthField, heightField);
+        gui = new CGui(widthField,heightField,1);
+        scaleX = ceil(width/widthField);
+        scaleY = ceil(height/heightField);
+        ROS_INFO("scaleY: %d | scaleX: %d", scaleY, scaleX);
+    }
 
-    grid = new float[width*height];
-    copy(msg->data.begin(), msg->data.end(), grid);
+
+    //copy(msg->data.begin(), msg->data.end(), grid);
+
+    int posGrid, posField;
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x ++)
+        {
+            posGrid = y * width + x;
+            if(msg->data.at(posGrid) == -1)
+            {
+                posField = ((height - y)/scaleY)* widthField + x/scaleX;
+                field0[posField] = 125;
+            }
+        }
+    }
+
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x ++)
+        {
+            posGrid = y * width + x;
+            if(msg->data.at(posGrid) == 100)
+            {
+                posField = ((height - y)/scaleY)* widthField + x/scaleX;
+                field0[posField] = -125;
+            }
+        }
+    }
+
     received_map = true;
 
 }
 
+
 void recalculateField()
 {
-    int pos = 1;
-
-    for(int y = 1; y < height - 1; y++)
+    int pos;
+    for(int y = 1; y < heightField - 1; y++)
     {
-        for(int x = 1; x < width - 1; x ++)
+        for(int x = 1; x < widthField - 1; x ++)
         {
-            pos = y * width + x;
-            if(grid[pos] == 100)
-                field[pos] = -100;
-            else if(grid[pos] == -1)
-                field[pos] = 50;
+            pos = y * widthField + x;
+            field1[pos] = (field0[pos-1] + field0[pos+1] + field0[pos-widthField]+ field0[pos + widthField])/4;
         }
     }
 
-    for(int y = 1; y < height - 1; y++)
+    for(int y = 1; y < heightField - 1; y++)
     {
-        for(int x = 1; x < width - 1; x ++)
+        for(int x = 1; x < widthField - 1; x ++)
         {
-            pos = y * width + x;
-            field[pos] = (grid[pos-1] + grid[pos+1] + grid[pos-width]+ grid[pos + width])/4;
+            pos = y * widthField + x;
+            if(field0[pos] == -125 )
+                field1[pos] = -125;
         }
     }
-
-
 }
 
 void displayField()
 {
 
-//    for (int pos = 0; pos < imageWidth*imageHeight; pos++)
-//        image->data[pos*3] = image->data[pos*3+1] = image->data[pos*3+2] = (unsigned char)fmin(fmax(0,bla1[pos]),255);
-//    if (robotPlaced||true)
-//    {
-//        int index = rY*imageWidth+rX;
-//        int ii[9] = {0,-1,1,-imageWidth,imageWidth,-1-imageWidth,1-imageWidth,-1+imageWidth,+1+imageWidth};
-//        for (int u = 0;u<1;u++){
-//            int mi = 0;
-//            float locMin = bla1[index];
-//            for (int i = 0;i<9;i++){
-//                if (locMin < bla1[index+ii[i]])
-//                {
-//                    locMin = bla1[index+ii[i]];
-//                    mi = i;
-//                }
-//            }
-//            index += ii[mi];
-//                rX = index%150;
-//                rY = index/150;
-//            for (int i = 0;i<9;i++){
-//                image->data[(index+ii[i])*3+1]=image->data[(index+ii[i])*3+2] = 0;
-//                image->data[(index+ii[i])*3]= 255;
-//                bla1[(index+ii[i])]=0;
-//            }
+    for (int pos = 0; pos < widthField*heightField; pos++)
+        image->data[pos*3] = image->data[pos*3+1] = image->data[pos*3+2] = (unsigned char)fmin(fmax(0, field1[pos]+128),255);
 
-//        }
+    memcpy(field0, field1,sizeof(float)*widthField*heightField);
+    gui->drawImage(image);
+    gui->update();
 
-//    }
 }
 
 int main(int argc,char *argv[])

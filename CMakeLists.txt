@@ -62,8 +62,10 @@ add_library(frelement src/CFrelement.cpp)
 add_library(fremen_timer src/CTimer.cpp)
 add_library(fremengridlib src/CFremenGrid.cpp)
 add_library(order src/order.cpp)
+add_library(rawimagelib src/CRawImage.cpp)
+add_library(guilib src/CGui.cpp)
 
-
+target_link_libraries(frontier_exploration rawimagelib guilib)
 target_link_libraries(frelement fremen_timer)
 target_link_libraries(fremengridlib frelement)
 target_link_libraries(fremengrid fremengridlib)
@@ -85,7 +87,9 @@ target_link_libraries(grid_planning ${catkin_LIBRARIES})
 target_link_libraries(flat ${catkin_LIBRARIES})
 target_link_libraries(flat_generate_grids ${catkin_LIBRARIES})
 target_link_libraries(flat_diff ${catkin_LIBRARIES})
-target_link_libraries(frontier_exploration ${catkin_LIBRARIES} SDL)
+target_link_libraries(frontier_exploration ${catkin_LIBRARIES} SDL SDL_ttf)
+
+
 
 
 
