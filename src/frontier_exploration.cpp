@@ -14,11 +14,14 @@ tf::TransformListener *tf_listener_ptr;
 ros::Publisher *vel_pub_ptr;
 
 //float a[widht*height];
-unsigned int width, height, widthField = 304, heightField = 352;
+unsigned int width, height, previous_width = 0, previous_height = 0, widthField = 384, heightField = 672;
 unsigned int scaleX, scaleY;
 
 geometry_msgs::Pose robot_pose;
-float *grid, *field0, *field1;
+float *grid = NULL;
+float *field0 = NULL;
+float *field1 = NULL;
+
 CRawImage *image;
 CGui* gui;
 bool received_map = false;
@@ -26,30 +29,47 @@ float resolution, originX, originY;
 
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    ROS_INFO("Received new map -> %d x %d", msg->info.width, msg->info.height);
-
 
     if(!received_map)
     {
-        width = msg->info.width;
-        height = msg->info.height;
-        originX = msg->info.origin.position.x;
-        originY = msg->info.origin.position.y;
-        resolution = msg->info.resolution;
-        field0 = new float[widthField*heightField];
-        field1 = new float[widthField*heightField];
-        grid = new float[width*height];
-        memset(field0, 0, (widthField)*(heightField)*sizeof(float));
-        memset(field1, 0, (widthField)*(heightField)*sizeof(float));
-        image = new CRawImage(widthField, heightField);
-        gui = new CGui(widthField,heightField,1);
-        scaleX = ceil(width/widthField);
-        scaleY = ceil(height/heightField);
-        ROS_INFO("scaleY: %d | scaleX: %d", scaleY, scaleX);
+        ROS_INFO("Previous: %d x %d | Received: %d x %d", previous_width, previous_height, msg->info.width, msg->info.height);
+        if(msg->info.width != previous_width || msg->info.height != previous_height)
+        {
+            ROS_INFO("Received map with new dimensions!  %d x %d", msg->info.width, msg->info.height);
+            previous_width = width;
+            previous_height = height;
+
+            width = msg->info.width;
+            height = msg->info.height;
+            originX = msg->info.origin.position.x;
+            originY = msg->info.origin.position.y;
+            resolution = msg->info.resolution;
+
+            delete[] field0;
+            delete[] field1;
+            delete[] grid;
+            field0 = new float[widthField*heightField];
+            field1 = new float[widthField*heightField];
+            grid = new float[width*height];
+
+            memset(field0, 0, (widthField)*(heightField)*sizeof(float));
+            memset(field1, 0, (widthField)*(heightField)*sizeof(float));
+            image = new CRawImage(widthField, heightField);
+            gui = new CGui(widthField,heightField,1);
+
+            scaleX = ceil((float)width/(float)widthField);
+            scaleY = ceil((float)height/(float)heightField);
+            ROS_INFO("scaleX: %d | scaleY: %d", scaleX, scaleY);
+            received_map = true;
+        }
+    }
+    else
+    {
+            ROS_INFO("Received new map!");
     }
 
-
-    //copy(msg->data.begin(), msg->data.end(), grid);
+//    ROS_INFO("scaleX: %d | scaleY: %d", scaleX, scaleY);
+//    ROS_INFO("Received map with new dimensions!  %d x %d", msg->info.width, msg->info.height);
 
     int posGrid, posField;
     for(int y = 0; y < height; y++)
@@ -59,7 +79,8 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
             posGrid = y * width + x;
             if(msg->data.at(posGrid) == -1)
             {
-                posField = ((height - y)/scaleY)* widthField + x/scaleX;
+                posField = ((height - y)/scaleY)* widthField + (x)/scaleX;
+//                ROS_INFO("posField: %d", posField);
                 field0[posField] = 125;
             }
         }
@@ -72,13 +93,12 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
             posGrid = y * width + x;
             if(msg->data.at(posGrid) == 100)
             {
-                posField = ((height - y)/scaleY)* widthField + x/scaleX;
+                posField = ((height - y)/scaleY)* widthField + (x)/scaleX;
+//                ROS_INFO("posField: %d", posField);
                 field0[posField] = -125;
             }
         }
     }
-
-    received_map = true;
 
 }
 
@@ -86,7 +106,7 @@ void poseCallback(const geometry_msgs::Pose::ConstPtr& msg)
 {
     robot_pose.orientation = msg->orientation;
     robot_pose.position = msg->position;
-    ROS_INFO("x: %f y: %f", robot_pose.position.x, robot_pose.position.y);
+    //ROS_INFO("x: %f y: %f", robot_pose.position.x, robot_pose.position.y);
 }
 
 
@@ -118,23 +138,19 @@ void displayField()
 
     for (int pos = 0; pos < widthField*heightField; pos++)
         image->data[pos*3] = image->data[pos*3+1] = image->data[pos*3+2] = (unsigned char)fmin(fmax(0, field1[pos]+128),255);
-
-
 }
 
 void path_planning()
 {
 
     unsigned int rx, ry, index;
-    //rx = robot_pose.position.x;
-    //ry = robot_pose.position.y;
 
 //    ROS_INFO("x: %f y: %f", robot_pose.position.x, robot_pose.position.y);
     rx = (unsigned int)((robot_pose.position.x - originX) / resolution);
     ry = (unsigned int)((robot_pose.position.y - originY) / resolution);
 //    ROS_INFO("rx: %d ry: %d", rx, ry);
     index = ((height - ry)/scaleY)* widthField + rx/scaleX;
-    ROS_INFO("index: %d", index);
+//    ROS_INFO("index: %d", index);
 
     int ii[9] = {0, -1, 1, -widthField, widthField, -1-widthField, 1-widthField, -1+widthField, +1+width};
 
@@ -149,8 +165,8 @@ void path_planning()
             }
         }
         index += ii[mi];
-            //rx = index%150;
-            //ry = index/150;
+        //rx = index%150;
+        //ry = index/150;
         for (int i = 0;i<9;i++){
             image->data[(index+ii[i])*3+1]=image->data[(index+ii[i])*3+2] = 0;
             image->data[(index+ii[i])*3]= 255;
