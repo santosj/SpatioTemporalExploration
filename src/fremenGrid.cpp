@@ -101,6 +101,14 @@ tf::TransformListener *tf_listener;
 ros::Publisher *octomap_pub_ptr, *estimate_pub_ptr,*clock_pub_ptr;
 ros::Publisher retrieve_publisher;
 ros::Publisher information_publisher;
+
+bool projectGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
+{
+    grid->load(req.filename.c_str());
+    ROS_INFO("3D Grid of %ix%ix%i loaded !",grid->xDim,grid->yDim,grid->zDim);
+    res.result = true;
+    return true;
+}
  
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {

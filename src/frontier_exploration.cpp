@@ -30,6 +30,7 @@ CGui* gui;
 bool received_map = false;
 float resolution, originX, originY;
 
+
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
     if(msg->info.width != previous_width || msg->info.height != previous_height) received_map = false;
@@ -87,7 +88,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
             {
                 posField = ((height - y)/scaleY)* widthField + (x)/scaleX;
 //                ROS_INFO("posField: %d", posField);
-		grid[posField] = 125;
+        grid[posField] = 125;
             }
         }
     }
