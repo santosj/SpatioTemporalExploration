@@ -260,7 +260,7 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
 				{
 					cubeCenter.x = x;
 					cubeCenter.y = y;
-					cubeCenter.z = z;
+                    cubeCenter.z = z;
 					markers.points.push_back(cubeCenter);
 					markers.colors.push_back(m_color);
 					cells++;
