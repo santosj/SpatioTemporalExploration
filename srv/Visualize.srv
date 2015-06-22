@@ -2,6 +2,7 @@ float64 stamp
 float32 minProbability
 float32 maxProbability
 float32 period
+bool set_color
 float32 red
 float32 green 
 float32 blue 
