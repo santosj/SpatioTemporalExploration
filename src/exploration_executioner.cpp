@@ -268,11 +268,13 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //        ROS_ERROR("undocking failed!");
     //    }
 
-    spatiotemporalexploration::Information exploration_result;
-    exploration_result.information = information_sum;
-    info_pub_ptr->publish(exploration_result);
+    //spatiotemporalexploration::Information exploration_result;
+   // exploration_result.information = information_sum;
+    //info_pub_ptr->publish(exploration_result);
 
-    as->setSucceeded();
+    spatiotemporalexploration::ExecutionResult execution_result;
+    execution_result.information = information_sum;
+    as->setSucceeded(execution_result);
 
 
 }
