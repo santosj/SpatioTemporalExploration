@@ -1,6 +1,7 @@
 # Define the goal
 geometry_msgs/PoseArray locations
 int64 t
+bool navigation
 ---
 # Define the result
 float32 information

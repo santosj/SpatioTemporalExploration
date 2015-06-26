@@ -1,0 +1,3 @@
+string waypoint
+geometry_msgs/PoseArray locations
+float32 information

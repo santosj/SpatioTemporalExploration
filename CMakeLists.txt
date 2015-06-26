@@ -27,6 +27,11 @@ add_action_files(
 	Execution.action
 )
 
+add_message_files(
+  FILES
+  Information.msg
+)
+
 generate_messages(
 	DEPENDENCIES
 	std_msgs geometry_msgs actionlib_msgs
