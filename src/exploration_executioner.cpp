@@ -218,6 +218,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     {
                         obtainedInformation = measure_srv.response.information-lastInformation;
                         lastInformation = measure_srv.response.information;
+                        ROS_INFO("obtained: %f", obtainedInformation);
                     }
                 }
                 else
