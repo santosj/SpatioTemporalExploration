@@ -200,6 +200,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         point = 0;
         movePtu(pan[point],tilt[point]);
 
+        information_sum = 0.0;
+
         ros::spinOnce();
         while (ros::ok() && point < numPoints)
         {
