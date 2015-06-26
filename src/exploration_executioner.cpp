@@ -211,6 +211,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 if(measure_client_ptr->call(measure_srv))
                 {
                     ROS_INFO("Measure added to grid!");
+                    ROS_INFO("obtained: %f", measure_srv.response.information);
                     information_sum += measure_srv.response.information;
                 }
                 else
