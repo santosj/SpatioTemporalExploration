@@ -123,6 +123,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     spatiotemporalexploration::Reachable reachable_points;
 
     float information_sum = 0.0;
+    float lastInformation = 0.0;
+    float obtainedInformation = 0.0;
 
 
     //    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || true)//undocking was sucessful
@@ -212,7 +214,11 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 {
                     ROS_INFO("Measure added to grid!");
                     ROS_INFO("obtained: %f", measure_srv.response.information);
-                    information_sum += measure_srv.response.information;
+                    if (point = numPoints - 1)
+                    {
+                        obtainedInformation = measure_srv.response.information-lastInformation;
+                        lastInformation = measure_srv.response.information;
+                    }
                 }
                 else
                 {
@@ -250,7 +256,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             }
             ros::spinOnce();
         }
-
         //        }
         movePtu(0.0,0.0);
     }
@@ -276,7 +281,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //info_pub_ptr->publish(exploration_result);
 
     spatiotemporalexploration::ExecutionResult execution_result;
-    execution_result.information = information_sum;
+    execution_result.information = obtainedInformation;
     as->setSucceeded(execution_result);
 
 
