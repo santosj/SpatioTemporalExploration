@@ -1,12 +1,12 @@
-unch>
+<launch>
 	<!-- declare arg to be passed in -->
 	<arg name="machine" default="localhost" />
 	<arg name="user" default="" />
 
 	<machine name="$(arg machine)" address="$(arg machine)" env-loader="$(optenv ROS_ENV_LOADER )" user="$(arg user)" default="true"/>
 
-	<node pkg="spatiotemporalexploration" type="Executioner" name="exploration_executioner"/>
+	<node pkg="spatiotemporalexploration" type="exploration_executioner" name="Executioner" output="screen"/>
 
-	<node pkg="spatiotemporalexploration" type="Planner" name="exploration_planner"/>
+	<node pkg="spatiotemporalexploration" type="exploration_planner" name="Planner"/>
 
 </launch>
