@@ -21,7 +21,7 @@
 #include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
-#define WW
+#define AACHEN
 
 #ifdef WW
 #define MIN_X  -15.5
@@ -83,6 +83,15 @@
 #define MIN_Z  -0.0
 #define DIM_X 560
 #define DIM_Y 990
+#define DIM_Z 60
+#endif
+
+#ifdef AACHEN
+#define MIN_X  10.0
+#define MIN_Y  -4.0
+#define MIN_Z  -0.0
+#define DIM_X 50 
+#define DIM_Y 160
 #define DIM_Z 60
 #endif
 
