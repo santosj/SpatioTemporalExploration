@@ -108,6 +108,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
 
     int n = (int) goal->locations.poses.size();
+    if(n == 0)
+	n = 1;
 
     if(n == 0)
 	n = 1;
@@ -218,7 +220,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 {
                     ROS_INFO("Measure added to grid!");
                     ROS_INFO("obtained: %f", measure_srv.response.information);
-                    if (point = numPoints - 1)
+                    if (point == numPoints - 1)
                     {
                         obtainedInformation = measure_srv.response.information-lastInformation;
                         lastInformation = measure_srv.response.information;
