@@ -1,0 +1,9 @@
+<launch>
+	<!-- declare arg to be passed in -->
+	<arg name="machine" default="localhost" />
+	<arg name="user" default="" />
+
+	<machine name="$(arg machine)" address="$(arg machine)" env-loader="$(optenv ROS_ENV_LOADER )" user="$(arg user)" default="true"/>
+
+	<node pkg="spatiotemporalexploration" name="FreMEnGrid" type="fremenGrid" output="screen"/>
+</launch>
