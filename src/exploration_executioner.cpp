@@ -26,6 +26,7 @@ using namespace std;
 
 int ptuMovementFinished = 0;
 
+float lastInformation = 0.0;
 bool drawEmptyCells = false;
 bool drawCells = true;
 bool saveFlag = false;
@@ -108,6 +109,9 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     int n = (int) goal->locations.poses.size();
 
+    if(n == 0)
+	n = 1;
+
     ROS_INFO("received %d locations to visit", n);
 
     //ROS_INFO("undocking...");
@@ -144,7 +148,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 //    current_goal.target_pose.header.frame_id = "map";
 
     float information_sum = 0.0;
-    float lastInformation = 0.0;
     float obtainedInformation = 0.0;
 
 
