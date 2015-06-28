@@ -326,93 +326,93 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         }
     }
 
-    /*** Mask ***/
-    //TODO  - mask inicialization in the main function
-    double mask[radius*2+1][radius*2+1];
-    double d;
-    float r =radius;
-    for(int y = 0; y < radius*2+1; y++)
-    {
-        for(int x = 0; x < radius*2+1; x++)
-        {
-            d = sqrt(pow(x-r, 2) + pow(y-r,2))/r;
-            mask[y][x] = fmax(fmin(d,1.0),0.0);
-        }
-    }
+//    /*** Mask ***/
+//    //TODO  - mask inicialization in the main function
+//    double mask[radius*2+1][radius*2+1];
+//    double d;
+//    float r =radius;
+//    for(int y = 0; y < radius*2+1; y++)
+//    {
+//        for(int x = 0; x < radius*2+1; x++)
+//        {
+//            d = sqrt(pow(x-r, 2) + pow(y-r,2))/r;
+//            mask[y][x] = fmax(fmin(d,1.0),0.0);
+//        }
+//    }
 
-    /*** Get maximas ***/
-    ROS_INFO("Getting local maximas...");
-    //    vector<maxima> local_maximas;
-    maxima last_max, final_max;
-    float ix[goal->max_loc+1], iy[goal->max_loc+1];
+//    /*** Get maximas ***/
+//    ROS_INFO("Getting local maximas...");
+//    //    vector<maxima> local_maximas;
+//    maxima last_max, final_max;
+//    float ix[goal->max_loc+1], iy[goal->max_loc+1];
 
-    result.information = 0;
+//    result.information = 0;
 
-    for(int w = 0; w < goal->max_loc; w++)
-    {
-        last_max.value = 0;
-        last_max.x = 1;
-        last_max.y = 1;
+//    for(int w = 0; w < goal->max_loc; w++)
+//    {
+//        last_max.value = 0;
+//        last_max.x = 1;
+//        last_max.y = 1;
 
-        for(int y = 0; y < numCellsX + radius*2; y++)
-        {
-            for(int x = 0; x < numCellsY + radius*2; x++)
-            {
-                if(last_max.value < entropies_aux[y][x])
-                {
-                    last_max.value = entropies_aux[y][x];
-                    last_max.x = x;
-                    last_max.y = y;
-                    //		ROS_INFO("max: %f", last_max.value);
-                }
-            }
-        }
-        result.information += last_max.value;
+//        for(int y = 0; y < numCellsX + radius*2; y++)
+//        {
+//            for(int x = 0; x < numCellsY + radius*2; x++)
+//            {
+//                if(last_max.value < entropies_aux[y][x])
+//                {
+//                    last_max.value = entropies_aux[y][x];
+//                    last_max.x = x;
+//                    last_max.y = y;
+//                    //		ROS_INFO("max: %f", last_max.value);
+//                }
+//            }
+//        }
+//        result.information += last_max.value;
 
-        final_max.x = last_max.x - radius;
-        final_max.y = last_max.y - radius;
-        final_max.value = last_max.value;
-        //        local_maximas.push_back(final_max);
+//        final_max.x = last_max.x - radius;
+//        final_max.y = last_max.y - radius;
+//        final_max.value = last_max.value;
+//        //        local_maximas.push_back(final_max);
 
-        local_point.id = w;
-        local_point.pose.position.y = MIN_Y + entropies_step*(final_max.x + 0.5);
-        local_point.pose.position.x = MIN_X + entropies_step*(final_max.y + 0.5);
-        //        ROS_INFO("(%d,%d) -> (%f, %f)", final_max.x, final_max.y, local_point.pose.position.x, local_point.pose.position.y);
+//        local_point.id = w;
+//        local_point.pose.position.y = MIN_Y + entropies_step*(final_max.x + 0.5);
+//        local_point.pose.position.x = MIN_X + entropies_step*(final_max.y + 0.5);
+//        //        ROS_INFO("(%d,%d) -> (%f, %f)", final_max.x, final_max.y, local_point.pose.position.x, local_point.pose.position.y);
 
-        ix[w+1] = local_point.pose.position.x;
-        iy[w+1] = local_point.pose.position.y;
-        maximas_makers.markers.push_back(local_point);
+//        ix[w+1] = local_point.pose.position.x;
+//        iy[w+1] = local_point.pose.position.y;
+//        maximas_makers.markers.push_back(local_point);
 
-        for(int y = 0; y < radius*2 + 1; y++)
-        {
-            for(int x = 0; x < radius*2 + 1; x++)
-            {
-                entropies_aux[final_max.y + y][final_max.x + x] = entropies_aux[final_max.y + y][final_max.x + x] * mask[y][x];
-            }
-        }
-    }
-    ix[0] = -1.0;
-    iy[0] =  0.0;
+//        for(int y = 0; y < radius*2 + 1; y++)
+//        {
+//            for(int x = 0; x < radius*2 + 1; x++)
+//            {
+//                entropies_aux[final_max.y + y][final_max.x + x] = entropies_aux[final_max.y + y][final_max.x + x] * mask[y][x];
+//            }
+//        }
+//    }
+//    ix[0] = -1.0;
+//    iy[0] =  0.0;
 
-    /*** Path planning ***/
-    ROS_INFO("planning the path...");
-    CTSP tsp(ix, iy, goal->max_loc+1);
-    tsp.solve(goal->max_loc*2);
+//    /*** Path planning ***/
+//    ROS_INFO("planning the path...");
+//    CTSP tsp(ix, iy, goal->max_loc+1);
+//    tsp.solve(goal->max_loc*2);
 
-    result.locations.header.frame_id = "map";
+//    result.locations.header.frame_id = "map";
 
-    geometry_msgs::Pose pose_aux;
+//    geometry_msgs::Pose pose_aux;
 
-    for(int i = 0; i < goal->max_loc+2; i++)
-    {
-        pose_aux.position.x = tsp.x[i];
-        pose_aux.position.y = tsp.y[i];
-        pose_aux.orientation.w = 1.0;
-        result.locations.poses.push_back(pose_aux);
-    }
+//    for(int i = 0; i < goal->max_loc+2; i++)
+//    {
+//        pose_aux.position.x = tsp.x[i];
+//        pose_aux.position.y = tsp.y[i];
+//        pose_aux.orientation.w = 1.0;
+//        result.locations.poses.push_back(pose_aux);
+//    }
 
 
-    ROS_INFO("plan completed! sending results...");
+//    ROS_INFO("plan completed! sending results...");
 
     //send goals
     points_pub_ptr->publish(points_markers);
@@ -492,32 +492,32 @@ int main(int argc,char *argv[])
     plan.request.tolerance = 0.2;
 
 
-    ROS_INFO("initializing reachability grid");
-    int grid_ind = 0;
-    for(int j = 0; j < numCellsY; j++)
-    {
-        for(int i = 0; i < numCellsX; i++)
-        {
-            plan.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
-            plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
-            if(plan_client.call(plan))//path received
-            {
-                if((int) plan.response.plan.poses.size() > 0){//goal is reachable
-                    reachability_grid_ptr[grid_ind] = 1.0;
-                    printf("aha %i\n",grid_ind);
-                }
-                else
-                    reachability_grid_ptr[grid_ind] = 0.0;
-            }
-            else
-            {
-                ROS_ERROR("failed to call make_plan service");
-                reachability_grid_ptr[grid_ind] = 0.0;
-            }
-            grid_ind++;
-        }
-    }
-    ROS_INFO("reachability grid done! starting server...");
+//    ROS_INFO("initializing reachability grid");
+//    int grid_ind = 0;
+//    for(int j = 0; j < numCellsY; j++)
+//    {
+//        for(int i = 0; i < numCellsX; i++)
+//        {
+//            plan.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
+//            plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
+//            if(plan_client.call(plan))//path received
+//            {
+//                if((int) plan.response.plan.poses.size() > 0){//goal is reachable
+//                    reachability_grid_ptr[grid_ind] = 1.0;
+//                    printf("aha %i\n",grid_ind);
+//                }
+//                else
+//                    reachability_grid_ptr[grid_ind] = 0.0;
+//            }
+//            else
+//            {
+//                ROS_ERROR("failed to call make_plan service");
+//                reachability_grid_ptr[grid_ind] = 0.0;
+//            }
+//            grid_ind++;
+//        }
+//    }
+//    ROS_INFO("reachability grid done! starting server...");
 
     Server server(n, "planner", boost::bind(&execute, _1, &server), false);
     server.start();

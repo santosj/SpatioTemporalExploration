@@ -108,7 +108,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     int n = (int) goal->locations.poses.size();
 
-
     ROS_INFO("received %d locations to visit", n);
 
     //ROS_INFO("undocking...");
@@ -122,31 +121,31 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     spatiotemporalexploration::Reachable reachable_points;
 
+
+    //    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || true)//undocking was sucessful
+    //    //    {
+    //    if(robot_charging)
+    //    {
+    //        //Undocking
+    //        current_goal.action_server = "undocking";
+    //        current_goal.target_pose.header.frame_id = "map";
+    //        ac_nav_ptr->sendGoal(current_goal);
+    //        ac_nav_ptr->waitForResult(ros::Duration(0.0));
+
+    //        if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || true)//undocking was sucessful
+    //            ROS_INFO("Undocking sucessful! Starting exploration run.");
+    //        else
+    //            ROS_ERROR("undocking failed!");
+    //    }
+
+
+
+//    current_goal.action_server = "move_base";
+//    current_goal.target_pose.header.frame_id = "map";
+
     float information_sum = 0.0;
     float lastInformation = 0.0;
     float obtainedInformation = 0.0;
-
-
-    //    if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || true)//undocking was sucessful
-    //    {
-    if(robot_charging)
-    {
-        //Undocking
-        current_goal.action_server = "undocking";
-        current_goal.target_pose.header.frame_id = "map";
-        ac_nav_ptr->sendGoal(current_goal);
-        ac_nav_ptr->waitForResult(ros::Duration(0.0));
-
-        if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED || true)//undocking was sucessful
-            ROS_INFO("Undocking sucessful! Starting exploration run.");
-        else
-            ROS_ERROR("undocking failed!");
-    }
-
-
-
-    current_goal.action_server = "move_base";
-    current_goal.target_pose.header.frame_id = "map";
 
 
     ROS_INFO("Undocking sucessful! Starting exploration run.");
@@ -159,45 +158,47 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         //        feedback.time_remaining = 0;//TODO
         //        as->publishFeedback(feedback);
 
-        if(goal->navigation)
-        {
-            current_goal.target_pose.pose = goal->locations.poses[i];
-            ROS_INFO("Moving to location -> (%f,%f)", goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
-            ac_nav_ptr->sendGoal(current_goal);
+        //        if(goal->navigation)
+        //        {
+        //            current_goal.target_pose.pose = goal->locations.poses[i];
+        //            ROS_INFO("Moving to location -> (%f,%f)", goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
+        //            ac_nav_ptr->sendGoal(current_goal);
 
-            //            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
-            ac_nav_ptr->waitForResult(ros::Duration(0.0));
+        //            //            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+        //            ac_nav_ptr->waitForResult(ros::Duration(0.0));
 
-            if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
-            {
-                ROS_WARN("failed to reach goal!");
-                while(retries < 2 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
-                {
-                    ac_nav_ptr->sendGoal(current_goal);
-                    ROS_INFO("trying to recover: %d", retries);
-                    //while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
-                    ac_nav_ptr->waitForResult(ros::Duration(0.0));
-                    retries++;
+        //            if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
+        //            {
+        //                ROS_WARN("failed to reach goal!");
+        //                while(retries < 2 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
+        //                {
+        //                    ac_nav_ptr->sendGoal(current_goal);
+        //                    ROS_INFO("trying to recover: %d", retries);
+        //                    //while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+        //                    ac_nav_ptr->waitForResult(ros::Duration(0.0));
+        //                    retries++;
 
-                }
+        //                }
 
-            }
+        //            }
 
-            //        if (i>0 && i < n-1){
-            reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
-            reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-            if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-            {
-                ROS_INFO("Monitored navigation: SUCCEEDED! taking measurements!");
-                reachable_points.value.push_back(1);
-            }
-            else
-            {
-                ROS_WARN("Point not reacheable! Taking measurements and moving to the next point...");
-                reachable_points.value.push_back(0);
-            }
+        //            //        if (i>0 && i < n-1){
+        //            reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
+        //            reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
+        //            if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+        //            {
+        //                ROS_INFO("Monitored navigation: SUCCEEDED! taking measurements!");
+        //                reachable_points.value.push_back(1);
+        //            }
+        //            else
+        //            {
+        //                ROS_WARN("Point not reacheable! Taking measurements and moving to the next point...");
+        //                reachable_points.value.push_back(0);
+        //            }
 
-        }
+        //        }
+
+
 
         point = 0;
         movePtu(pan[point],tilt[point]);
@@ -261,7 +262,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         movePtu(0.0,0.0);
     }
 
-    ROS_INFO("my work is done!");
+    ROS_INFO("sweep done!");
     reach_pub_ptr->publish(reachable_points);
 
     //Docking
@@ -278,7 +279,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //    }
 
     //spatiotemporalexploration::Information exploration_result;
-   // exploration_result.information = information_sum;
+    // exploration_result.information = information_sum;
     //info_pub_ptr->publish(exploration_result);
 
     spatiotemporalexploration::ExecutionResult execution_result;
