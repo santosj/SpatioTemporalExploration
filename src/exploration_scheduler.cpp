@@ -71,7 +71,7 @@ int main(int argc,char *argv[])
 		char timeStr[100];
 		char fileName[100];
 		strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
-		sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
+		sprintf(fileName,"/home/review/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
 		if (plans[position] > 0)
 		{
 			ROS_INFO("asking for a plan");

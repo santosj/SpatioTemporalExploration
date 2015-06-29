@@ -166,7 +166,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
     char timeStr[100];
     char fileName[100];
     strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
-    sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
+    sprintf(fileName,"/home/review/3dmaps/reachability-%s.grid",timeStr);
 
     FILE* file = fopen(fileName,"w");
 

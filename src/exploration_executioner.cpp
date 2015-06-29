@@ -224,7 +224,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     {
                         obtainedInformation = measure_srv.response.information-lastInformation;
                         lastInformation = measure_srv.response.information;
-                        ROS_INFO("obtained: %f", obtainedInformation);
+                        ROS_INFO("Obtained finally: %f", obtainedInformation);
                     }
                 }
                 else
@@ -288,9 +288,9 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //info_pub_ptr->publish(exploration_result);
 
     spatiotemporalexploration::ExecutionResult execution_result;
+    ROS_INFO("Executioned: sending information %f",obtainedInformation);
     execution_result.information = obtainedInformation;
     as->setSucceeded(execution_result);
-
 
 }
 
