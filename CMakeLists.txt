@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(spatiotemporalexploration)
 
 find_package(catkin REQUIRED COMPONENTS  pcl_conversions pcl_ros roscpp rospy std_msgs visualization_msgs geometry_msgs genmsg actionlib_msgs actionlib sensor_msgs image_transport)
-set ( CMAKE_CXX_FLAGS "-Ofast -march=native -mno-avx -ggdb")
+#set ( CMAKE_CXX_FLAGS "-Ofast -march=native -mno-avx -ggdb")
 #set ( CMAKE_CXX_FLAGS "-ggdb")
 
 add_message_files(
@@ -57,6 +57,9 @@ add_dependencies(exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate
 add_dependencies(exploration_executioner ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration_planner ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(flat_generate_grids ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(exploration_scheduler ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(exploration_schedule_creator ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(grid_planning ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 add_library(frelement src/CFrelement.cpp)
 add_library(fremen_timer src/CTimer.cpp)
