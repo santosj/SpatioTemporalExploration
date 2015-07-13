@@ -203,7 +203,7 @@ bool estimateEntropy(spatiotemporalexploration::Entropy::Request  &req, spatiote
 {
 	grid->recalculate(req.t);
 	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
-	//res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,1.0);
+    res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,5.0);
 	return true;
 }
 

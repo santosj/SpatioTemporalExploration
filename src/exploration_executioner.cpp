@@ -38,10 +38,12 @@ spatiotemporalexploration::Visualize visualize_srv;
 
 ros::ServiceClient *measure_client_ptr, *visualize_client_ptr;
 
-typedef actionlib::SimpleActionServer<spatiotemporalexploration::ExecutionAction> Server;
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+typedef actionlib::SimpleActionServer<spatiotemporalexploration::ExecutionAction> Server;
+typedef actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> PlanClient;//replan!
 
 actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> *ac_nav_ptr;
+actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> *ac_plan_ptr;
 
 ros::Publisher *reach_pub_ptr;
 
@@ -81,7 +83,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     ROS_INFO("Received new plan!");
     as->acceptNewGoal();
-    //as->setPreempted();
 
     //Dynamic Reconfigure (move_base)
     dynamic_reconfigure::ReconfigureRequest srv_req;
@@ -99,6 +100,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;
     spatiotemporalexploration::ExecutionFeedback feedback;
+
 
     sleep(1);
 
@@ -165,6 +167,27 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             if(retries >= 2)
             {
                 //ask for new plan with n-i locations to visit
+                spatiotemporalexploration::PlanGoal plan_goal;
+                plan_goal.max_loc = n - i;
+                ros::Time currentTime = ros::Time::now();
+                plan_goal.t = currentTime.sec;
+                ac_plan_ptr->sendGoal(plan_goal);
+                ac_plan_ptr->waitForResult();
+
+                if (ac_plan_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                {
+                    ROS_INFO("Received a new plan with possible information gain of %f",ac_plan_ptr->getResult()->information);
+                    ROS_INFO("executing plan");
+                    //ac_plan_ptr->getResult()->locations;
+
+                }
+                else
+                {
+                    ROS_INFO("Failed to obtain new plan!");
+                    ROS_INFO("Going to next point in the initial plan...");
+                }
+
+
             }
 
         }
@@ -251,14 +274,12 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     as->setSucceeded();
 
-
 }
 
 int main(int argc,char *argv[])
 {
     ros::init(argc, argv, "exploration_executioner");
     ros::NodeHandle n;
-
     ros::NodeHandle nh("~");
 
     Server server(n, "executioner", boost::bind(&execute, _1, &server), false);
@@ -268,6 +289,10 @@ int main(int argc,char *argv[])
     actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> ac_nav("monitored_navigation",true);
     ac_nav_ptr = &ac_nav;
     ac_nav.waitForServer();
+
+    PlanClient ac_plan("planner", true);
+    ac_plan_ptr = &ac_plan;
+    ac_plan.waitForServer();
 
     //Publishers
     ros::Publisher reach_pub = nh.advertise<spatiotemporalexploration::Reachable>("/reachable_points", 10);
