@@ -92,7 +92,23 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     float minRange = rangeLimit*rangeLimit*2;//!!!
     float oX = msg->info.origin.position.x, oY = msg->info.origin.position.x;
 
+    visualization_msgs::MarkerArray reachability_markers;
+    visualization_msgs::Marker reachable_point;
+    reachable_point.header.frame_id = "/map";
+    reachable_point.header.stamp = ros::Time::now();
+    reachable_point.ns = "reachable_locations";
+    reachable_point.action = visualization_msgs::Marker::ADD;
+    reachable_point.type = visualization_msgs::Marker::CUBE;
+    reachable_point.color.a = 0.8;
+    reachable_point.color.b = 0.0;
+    reachable_point.pose.position.z = 0.1;
+    reachable_point.pose.orientation.w = 1.0;
+    reachable_point.scale.x = entropies_step;
+    reachable_point.scale.y = entropies_step;
+
+
     float xp, yp;
+    int ind = 0;
 
     for(int j = 0; j < numCellsY; j++)
     {
@@ -126,8 +142,28 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
                     }
                 }
             }
+
+            if(sqrt(minRange)*entropies_step < range)
+                reachability_grid_ptr[ind] = 0.0;
+            else
+                reachability_grid_ptr[ind] = 1.0;
+
+            //Reachability Markers:
+            reachable_point.pose.position.x = xp;
+            reachable_point.pose.position.y = yp;
+            reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
+            reachable_point.color.g = reachability_grid_ptr[ind];
+            reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
+            reachable_point.pose.position.z = reachable_point.scale.z/2;
+            reachability_markers.markers.push_back(reachable_point);
+
         }
+        ind++;
     }
+
+    //Publish grid
+    reachability_markers.markers.push_back(reachable_point);
+    ROS_INFO("Published reacheability grid.");
 
     map_received = true;
 
