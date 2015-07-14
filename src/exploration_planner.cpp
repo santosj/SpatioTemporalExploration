@@ -87,36 +87,40 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 {
 
-    float rangeLimit = entropies_step/msg->info.resolution;
+    float range = entropies_step/2;
+    float rangeLimit = range/msg->info.resolution;
     float minRange = rangeLimit*rangeLimit*2;//!!!
+    float oX = msg->info.origin.position.x, oY = msg->info.origin.position.x;
+
+    float xp, yp;
 
     for(int j = 0; j < numCellsY; j++)
     {
         for(int i = 0; i < numCellsX; i++)
         {
+            xp = MIN_X + entropies_step*(i+0.5);
+            xp = MIN_Y + entropies_step*(j+0.5);
 
-            int xStart = (int)((xp-oX-range)/resolution);
-            int xEnd   = (int)((xp-oX+range)/resolution);
-            int yStart = (int)((yp-oY-range)/resolution);
-            int yEnd   = (int)((yp-oY+range)/resolution);
-            int xM = (int)((i-oX)/resolution);
-            int yM = (int)((j-oY)/resolution);
-            xM = fmax(fmin(xM,xDim-1),0);
-            yM = fmax(fmin(yM,yDim-1),0);
-            xStart = fmax(fmin(xStart,xDim-1),0);
-            xEnd   = fmax(fmin(xEnd,xDim-1),0);
-            yStart = fmax(fmin(yStart,yDim-1),0);
-            yEnd   = fmax(fmin(yEnd,yDim-1),0);
-            zStart = fmax(fmin(zStart,zDim-1),0);
-            zEnd   = fmax(fmin(zEnd,zDim-1),0);
+            int xStart = (int)((xp-oX-range)/msg->info.resolution);
+            int xEnd   = (int)((xp-oX+range)/msg->info.resolution);
+            int yStart = (int)((yp-oY-range)/msg->info.resolution);
+            int yEnd   = (int)((yp-oY+range)/msg->info.resolution);
+            int xM = (int)((i-oX)/msg->info.resolution);
+            int yM = (int)((j-oY)/msg->info.resolution);
+            xM = fmax(fmin(xM,DIM_X-1),0);
+            yM = fmax(fmin(yM,DIM_Y-1),0);
+            xStart = fmax(fmin(xStart,DIM_X-1),0);
+            xEnd   = fmax(fmin(xEnd,DIM_X-1),0);
+            yStart = fmax(fmin(yStart,DIM_Y-1),0);
+            yEnd   = fmax(fmin(yEnd,DIM_Y-1),0);
 
             int cellIndex=0;
-            for (int y = yStart;y<=yEnd;y++)
+            for (int y = yStart; y <= yEnd; y++)
             {
-                cellIndex = xDim*(y+yDim*z);
-                for (int x = xStart;x<=xEnd;x++)
+                cellIndex = DIM_X*(y+DIM_Y);
+                for (int x = xStart; x <= xEnd; x++)
                 {
-                    if (probs[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
+                    if (msg->data[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
                     {
                         minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
                     }
@@ -124,26 +128,6 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             }
         }
     }
-
-    //    int grid_ind = 0;
-    //    for(int j = 0; j < numCellsY; j++)
-    //    {
-    //        for(int i = 0; i < numCellsX; i++)
-    //        {
-    //plan.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
-    //plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
-    //            if((int) plan.response.plan.poses.size() > 0){//goal is reachable
-    //                reachability_grid_ptr[grid_ind] = 1.0;
-    //            }
-    //            else
-    //                reachability_grid_ptr[grid_ind] = 0.0;
-    //            grid_x = (unsigned int)((map_x - map.info.origin.position.x) / map.info.resolution)
-    //            grid_y = (unsigned int)((map_y - map.info.origin.position.y) / map.info.resolution)
-
-    //            grid_ind++;
-    //        }
-
-    //    }
 
     map_received = true;
 
