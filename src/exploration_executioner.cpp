@@ -101,6 +101,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;
     spatiotemporalexploration::ExecutionFeedback feedback;
 
+    geometry_msgs::PoseArray exploration_goals;
+    exploration_goals.poses = goal->locations.poses;
 
     sleep(1);
 
@@ -109,7 +111,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     float pan[] =  { 0.00, 0.90, 1.80, 2.70, 2.70, 1.80, 0.90, 0.00,-0.90,-1.80,-2.70,-2.70,-1.80,-0.90,0.00};
     float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
 
-    int n = (int) goal->locations.poses.size();
+    int n = (int) exploration_goals.poses.size(); //goal->locations.poses.size();
+    int new_n;
 
     ROS_INFO("The plan received has %d locations to visit.", n);
 
@@ -145,7 +148,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         as->publishFeedback(feedback);
 
         current_goal.target_pose.pose = goal->locations.poses[i];
-        ROS_INFO("Moving to location %d/%d -> (%f,%f)",  i, n, goal->locations.poses[i].position.x, goal->locations.poses[i].position.y);
+        ROS_INFO("Moving to location %d/%d -> (%f,%f)",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
         ac_nav_ptr->sendGoal(current_goal);
 
         //            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
@@ -153,19 +156,21 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
         if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
         {
-            ROS_WARN("failed to reach goal!");
+            ROS_WARN("Failed to reach goal!");
             while(retries < 2 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
             {
                 ac_nav_ptr->sendGoal(current_goal);
-                ROS_INFO("trying to recover: %d", retries);
+                ROS_INFO("Recovery behaviour nr: %d", retries);
                 //while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
                 ac_nav_ptr->waitForResult(ros::Duration(0.0));
                 retries++;
 
             }
 
+
             if(retries >= 2)
             {
+                ROS_INFO("Recovery behaviours failed! Asking dor a new plan...");
                 //ask for new plan with n-i locations to visit
                 spatiotemporalexploration::PlanGoal plan_goal;
                 plan_goal.max_loc = n - i;
@@ -179,6 +184,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     ROS_INFO("Received a new plan with possible information gain of %f",ac_plan_ptr->getResult()->information);
                     ROS_INFO("executing plan");
                     //ac_plan_ptr->getResult()->locations;
+                    n = (int) ac_plan_ptr->getResult()->locations.poses.size();
+                    exploration_goals.poses.clear();
+                    exploration_goals.poses = ac_plan_ptr->getResult()->locations.poses;
+                    i = 0;
 
                 }
                 else
@@ -186,8 +195,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     ROS_INFO("Failed to obtain new plan!");
                     ROS_INFO("Going to next point in the initial plan...");
                 }
-
-
             }
 
         }
@@ -260,7 +267,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         movePtu(0.0,0.0);
     }
 
-    ROS_INFO("my work is done! going to charging station...");
+    ROS_INFO("My work is done! going to charging station...");
     reach_pub_ptr->publish(reachable_points);
 
     //Docking

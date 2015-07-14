@@ -64,26 +64,26 @@ float CFremenGrid::getClosestObstacle(float xp,float yp,float zt,float range)
 	int xEnd   = (int)((xp-oX+range)/resolution);
 	int yStart = (int)((yp-oY-range)/resolution);
 	int yEnd   = (int)((yp-oY+range)/resolution);
-	int zStart = (int)((0.2-oZ-range)/resolution);
-	int zEnd   = (int)((2.0-oY+range)/resolution);
+    int zStart = (int)((0.5-oZ)/resolution);
+    int zEnd   = (int)((1.5-oZ)/resolution);
 	int xM = (int)((xp-oX)/resolution);
 	int yM = (int)((yp-oY)/resolution);
 	xM = fmax(fmin(xM,xDim-1),0);
 	yM = fmax(fmin(yM,yDim-1),0);
-	xStart = fmax(fmin(xStart,xDim-1),0);
-	xEnd   = fmax(fmin(xEnd,xDim-1),0);
-	yStart = fmax(fmin(yStart,yDim-1),0);
-	yEnd   = fmax(fmin(yEnd,yDim-1),0);
+    xStart = fmax(fmin(xStart,xDim-1),0);
+    xEnd   = fmax(fmin(xEnd,xDim-1),0);
+    yStart = fmax(fmin(yStart,yDim-1),0);
+    yEnd   = fmax(fmin(yEnd,yDim-1),0);
 	zStart = fmax(fmin(zStart,zDim-1),0);
 	zEnd   = fmax(fmin(zEnd,zDim-1),0);
 
 	int cellIndex=0;
-	for (int z = zStart;z<zEnd;z++)
+    for (int z = zStart;z<zEnd;z++)
 	{
-		for (int y = yStart;y<yEnd;y++)
+        for (int y = yStart;y<=yEnd;y++)
 		{
 			cellIndex = xDim*(y+yDim*z);
-			for (int x = xStart;x<xEnd;x++)
+            for (int x = xStart;x<=xEnd;x++)
 			{
 				if (probs[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
 				{
@@ -92,7 +92,7 @@ float CFremenGrid::getClosestObstacle(float xp,float yp,float zt,float range)
 			}	
 		}
 	}
-	return sqrt(minRange);
+    return sqrt(minRange)*resolution;
 }
 
 float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,uint32_t timestamp)

@@ -14,6 +14,7 @@
 #include "spatiotemporalexploration/Visualize.h"
 #include "spatiotemporalexploration/SaveLoad.h"
 #include "nav_msgs/GetPlan.h"
+#include "nav_msgs/OccupancyGrid.h"
 #include "order.h"
 
 #define MAX_ENTROPY 74975
@@ -22,6 +23,7 @@ using namespace std;
 
 double MIN_X,MIN_Y,MIN_Z,RESOLUTION;
 int DIM_X,DIM_Y,DIM_Z;
+bool map_received = false;
 
 ros::ServiceClient *save_client_ptr, *plan_client_ptr;
 
@@ -50,50 +52,6 @@ tf::TransformListener *tf_listener_ptr;
 ros::ServiceClient *entropy_client_ptr;
 
 ros::Publisher *points_pub_ptr, *max_pub_ptr, *reach_pub_ptr;
-
-bool visualizedGrid(spatiotemporalexploration::Visualize::Request  &req, spatiotemporalexploration::Visualize::Response &res)
-{
-
-    //Markers Initialization
-    visualization_msgs::MarkerArray points_markers;
-
-    visualization_msgs::Marker test_point;
-    test_point.header.frame_id = "/map";
-    test_point.header.stamp = ros::Time::now();
-    test_point.ns = "my_namespace";
-    test_point.action = visualization_msgs::Marker::ADD;
-    test_point.type = visualization_msgs::Marker::CUBE;
-    test_point.color.a = 0.8;
-    test_point.pose.position.z = 0.1;
-    test_point.pose.orientation.w = 1.0;
-    test_point.scale.x = entropies_step;
-    test_point.scale.y = entropies_step;
-
-    ROS_INFO("publishing reachability markers...");
-
-    int grid_ind = 0;
-    for(int j = 0; j < numCellsY; j++)
-    {
-        for(int i = 0; i < numCellsX; i++)
-        {
-            test_point.pose.position.x = MIN_X + entropies_step*(i+0.5);
-            test_point.pose.position.y = MIN_Y + entropies_step*(j+0.5);
-            test_point.id = grid_ind;
-            test_point.color.r = 1.0 - reachability_grid_ptr[grid_ind];
-            test_point.color.g = reachability_grid_ptr[grid_ind];
-            test_point.color.b = 0.0;
-            test_point.scale.z = 0.01 + reachability_grid_ptr[grid_ind];
-            test_point.pose.position.z = test_point.scale.z/2;
-            points_markers.markers.push_back(test_point);
-            grid_ind++;
-
-        }
-    }
-
-    reach_pub_ptr->publish(points_markers);
-
-    return true;
-}
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -126,6 +84,24 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
 
 }
 
+void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+{
+
+    ROS_INFO("Initializing reachability grid.");
+    int grid_ind = 0;
+    for(int j = 0; j < numCellsY; j++)
+    {
+        for(int i = 0; i < numCellsX; i++)
+        {
+            reachability_grid_ptr[grid_ind] = 1.0;
+            grid_ind++;
+        }
+    }
+
+
+    map_received = true;
+
+}
 
 void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg)
 {
@@ -135,8 +111,6 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     for(int i = 0; i < nr_points; i++)
     {
-        //        plan.request.goal.pose.position.x = MIN_X + entropies_step*(i+0.5);
-        //        plan.request.goal.pose.position.y = MIN_Y + entropies_step*(j+0.5);
         x = ((msg->x[i] - MIN_X)/entropies_step) - 0.5;
         y = ((msg->y[i] - MIN_Y)/entropies_step) - 0.5;
         ind = numCellsX*y + x;
@@ -156,7 +130,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     }
 
-    ROS_INFO("saving reachability grid...");
+    ROS_INFO("Saving reachability grid...");
 
     time_t timeNow;
     time(&timeNow);
@@ -202,22 +176,25 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     entropy_srv.request.t = 0.0;
 
     //Markers Initialization
-    visualization_msgs::MarkerArray points_markers, maximas_makers;
+    visualization_msgs::MarkerArray points_markers, maximas_makers, reachability_markers;
 
-    visualization_msgs::Marker test_point;
+    visualization_msgs::Marker test_point, reachable_point;
     test_point.header.frame_id = "/map";
     test_point.header.stamp = ros::Time::now();
-    test_point.ns = "my_namespace";
+    test_point.ns = "entropies";
     test_point.action = visualization_msgs::Marker::ADD;
     test_point.type = visualization_msgs::Marker::CUBE;
     test_point.color.a = 0.8;
     test_point.color.r = 0.1;
-    test_point.color.g = 0.0;
-    test_point.color.b = 1.0;
     test_point.pose.position.z = 0.1;
     test_point.pose.orientation.w = 1.0;
     test_point.scale.x = entropies_step;
     test_point.scale.y = entropies_step;
+
+    reachable_point = test_point;
+    reachable_point.ns = "reachable_locations";
+    reachable_point.color.b = 0.0;
+
 
     visualization_msgs::Marker local_point;
     local_point.header.frame_id = "/map";
@@ -273,16 +250,29 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                     entropies_aux[i + radius][j + radius] = 0;
                 }
 
+
+
                 entropy_srv.response.value = entropies_aux[i + radius][j + radius];
+
+                //Entropy Markers:
                 test_point.pose.position.x = MIN_X + entropies_step*(i+0.5);
                 test_point.pose.position.y = MIN_Y + entropies_step*(j+0.5);
-                test_point.id = ind;
-                test_point.color.r = 0.0;
+                test_point.id = reachable_point.id = ind;
                 test_point.color.g = 1.0 - (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
                 test_point.color.b = (1.0 * entropy_srv.response.value)/MAX_ENTROPY;
                 test_point.scale.z = 0.01 + (entropies_step * entropy_srv.response.value)/MAX_ENTROPY;
                 test_point.pose.position.z = test_point.scale.z/2;
+
+                //Reachability Markers:
+                reachable_point.pose.position.x = test_point.pose.position.x;
+                reachable_point.pose.position.y = test_point.pose.position.y;
+                reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
+                reachable_point.color.g = reachability_grid_ptr[ind];
+                reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
+                reachable_point.pose.position.z = test_point.scale.z/2;
+
                 points_markers.markers.push_back(test_point);
+                reachability_markers.markers.push_back(reachable_point);
 
                 ros::spinOnce();
             }
@@ -383,7 +373,9 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     //send goals
     points_pub_ptr->publish(points_markers);
+    reach_pub_ptr->publish(reachability_markers);
     max_pub_ptr->publish(maximas_makers);
+
     as->setSucceeded(result);
 
 }
@@ -428,7 +420,6 @@ int main(int argc,char *argv[])
     nav_msgs::GetPlan plan;
 
     ros::ServiceServer vis_service = n.advertiseService("/reachability/load", loadGrid);
-    ros::ServiceServer load_service = n.advertiseService("/reachability/visualize", visualizedGrid);
 
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_grid", 100);
     points_pub_ptr = &points_pub;
@@ -441,10 +432,12 @@ int main(int argc,char *argv[])
 
     ros::Subscriber rPoints_sub = n.subscribe("/reachable_points", 10, reachableCallback);
 
+    ros::Subscriber nogo_sub = n.subscribe("/nogo_map", 10, mapCallback);
+
     //get robot pose
     tf::StampedTransform st;
 
-    //reachability grid
+    //Reachability grid
     reachability_grid_ptr = new float[numCellsX*numCellsY];
 
     plan.request.start.pose.position.x = -1.0;
@@ -457,18 +450,11 @@ int main(int argc,char *argv[])
     plan.request.tolerance = 0.2;
 
 
-    ROS_INFO("Initializing reachability grid.");
-    int grid_ind = 0;
-    for(int j = 0; j < numCellsY; j++)
-    {
-        for(int i = 0; i < numCellsX; i++)
-        {
-            reachability_grid_ptr[grid_ind] = 1.0;
-            grid_ind++;
-        }
-    }
+    ROS_INFO("Waiting for the no go map!");
+    while(!map_received);
 
-    ROS_INFO("Reachability initialized! Starting planer action serverr...");
+
+    ROS_INFO("Reachability initialized! Starting planer action server...");
 
     Server server(n, "planner", boost::bind(&execute, _1, &server), false);
     server.start();
