@@ -1,7 +1,7 @@
 <launch>
 
 	<arg name="map" default="/opt/strands/maps/WW_GF_2015_02_22-nogo.yaml"/>
-	<node name="no_go_map_server" pkg="map_server" type="map_server" args="$(arg map)" unless="$(arg with_no_go_map)">
+	<node name="no_go_map_server" pkg="map_server" type="map_server" args="$(arg map)">
 	  <remap from="/map" to="/exploration_no_go_map"/>
 
 	</node>
