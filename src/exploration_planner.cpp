@@ -94,7 +94,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     float range = entropies_step/2;
     float rangeLimit = range/msg->info.resolution;
     float minRange = rangeLimit*rangeLimit*2;//!!!
-    float oX = msg->info.origin.position.x, oY = msg->info.origin.position.x;
+    float oX = msg->info.origin.position.x, oY = msg->info.origin.position.y;
 
     visualization_msgs::MarkerArray reachability_markers;
     visualization_msgs::Marker reachable_point;
@@ -121,34 +121,40 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             //ROS_INFO("Grid ind: %d", ind);
             xp = MIN_X + entropies_step*(i+0.5);
             yp = MIN_Y + entropies_step*(j+0.5);
+	    minRange = rangeLimit*rangeLimit*2;//!!!
 
             int xStart = (int)((xp-oX-range)/msg->info.resolution);
             int xEnd   = (int)((xp-oX+range)/msg->info.resolution);
             int yStart = (int)((yp-oY-range)/msg->info.resolution);
             int yEnd   = (int)((yp-oY+range)/msg->info.resolution);
-            int xM = (int)((i-oX)/msg->info.resolution);
-            int yM = (int)((j-oY)/msg->info.resolution);
-            xM = fmax(fmin(xM,DIM_X-1),0);
-            yM = fmax(fmin(yM,DIM_Y-1),0);
-            xStart = fmax(fmin(xStart,DIM_X-1),0);
-            xEnd   = fmax(fmin(xEnd,DIM_X-1),0);
-            yStart = fmax(fmin(yStart,DIM_Y-1),0);
-            yEnd   = fmax(fmin(yEnd,DIM_Y-1),0);
+            int xM	= (int)((xp-oX)/msg->info.resolution);
+            int yM 	= (int)((yp-oY)/msg->info.resolution);
+            xM = fmax(fmin(xM,msg->info.width-1),0);
+            yM = fmax(fmin(yM,msg->info.height-1),0);
+            xStart = fmax(fmin(xStart,msg->info.width-1),0);
+            xEnd   = fmax(fmin(xEnd,msg->info.width-1),0);
+            yStart = fmax(fmin(yStart,msg->info.height-1),0);
+            yEnd   = fmax(fmin(yEnd,msg->info.height-1),0);
+	    ROS_INFO("Map ranges are %d-%d-%d %d-%d-%d",xStart,xM,xEnd,yStart,yM,yEnd);
 
             int cellIndex=0;
             for (int y = yStart; y <= yEnd; y++)
             {
-                cellIndex = DIM_X*y;
+                cellIndex = msg->info.width*y;
                 for (int x = xStart; x <= xEnd; x++)
                 {
-                    if (msg->data[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
+//			ROS_INFO("value %d   dist: %f    minRange: %f",msg->data[cellIndex+x], sqrt((x-xM)*(x-xM)+(y-yM)*(y-yM)), minRange);
+			//ROS_INFO("Map value is %i for index %d (%ix%i)", msg->data[cellIndex+x], cellIndex+x,x,y);
+                    if (msg->data[cellIndex+x]  > 70 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
                     {
                         minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
                     }
                 }
             }
 
-            if(sqrt(minRange)*entropies_step < range)
+	//	ROS_INFO("Point (%f,%f) -> IND: %d -> obstacle dist: %f", xp, yp, ind, sqrt(minRange)*msg->info.resolution);
+		ROS_INFO("dist %f    range: %f", sqrt(minRange)*msg->info.resolution, range);
+            if(sqrt(minRange)*msg->info.resolution < range)
                 reachability_grid_ptr[ind] = 0.0;
             else
                 reachability_grid_ptr[ind] = 1.0;
@@ -160,16 +166,16 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             reachable_point.color.g = reachability_grid_ptr[ind];
             reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
             reachable_point.pose.position.z = reachable_point.scale.z/2;
+            reachable_point.id = ind++;
             reachability_markers.markers.push_back(reachable_point);
 
         }
-        ind++;
     }
 
     ROS_INFO("Finished.");
 
     //Publish grid
-    reachability_markers.markers.push_back(reachable_point);
+    //reachability_markers.markers.push_back(reachable_point);
     reach_pub_ptr->publish(reachability_markers);
     ROS_INFO("Published reacheability grid.");
 
