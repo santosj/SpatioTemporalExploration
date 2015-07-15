@@ -500,7 +500,7 @@ int main(int argc,char *argv[])
 
     ros::Subscriber rPoints_sub = n.subscribe("/reachable_points", 10, reachableCallback);
 
-    ros::Subscriber map_sub = n.subscribe("/nogo_map", 10, mapCallback);
+    ros::Subscriber map_sub = n.subscribe("/exploration_no_go_map", 10, mapCallback);
 
     //get robot pose
     tf::StampedTransform st;
