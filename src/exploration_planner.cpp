@@ -53,6 +53,8 @@ ros::ServiceClient *entropy_client_ptr;
 
 ros::Publisher *points_pub_ptr, *max_pub_ptr, *reach_pub_ptr;
 
+ros::Subscriber *map_sub_ptr;
+
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -171,6 +173,8 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     ROS_INFO("Published reacheability grid.");
 
     map_received = true;
+
+    ROS_INFO("Reachability initialized! Starting planer action server...");
 
 
 }
@@ -507,6 +511,7 @@ int main(int argc,char *argv[])
     ros::Subscriber rPoints_sub = n.subscribe("/reachable_points", 10, reachableCallback);
 
     ros::Subscriber map_sub = n.subscribe("/exploration_no_go_map", 10, mapCallback);
+    map_sub_ptr = &map_sub;
 
     //get robot pose
     tf::StampedTransform st;
@@ -525,12 +530,12 @@ int main(int argc,char *argv[])
 
 
     ROS_INFO("Waiting for the no go map!");
-    while(!map_received)
-        ROS_INFO("map received %d", map_received);
+//    while(!map_received)
+//        ROS_INFO("map received %d", map_received);
 
-    map_sub.shutdown();
+//    map_sub.shutdown();
 
-    ROS_INFO("Reachability initialized! Starting planer action server...");
+
 
     Server server(n, "planner", boost::bind(&execute, _1, &server), false);
     server.start();
