@@ -135,7 +135,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             xEnd   = fmax(fmin(xEnd,msg->info.width-1),0);
             yStart = fmax(fmin(yStart,msg->info.height-1),0);
             yEnd   = fmax(fmin(yEnd,msg->info.height-1),0);
-	    ROS_INFO("Map ranges are %d-%d-%d %d-%d-%d",xStart,xM,xEnd,yStart,yM,yEnd);
+	    //ROS_INFO("Map ranges are %d-%d-%d %d-%d-%d",xStart,xM,xEnd,yStart,yM,yEnd);
 
             int cellIndex=0;
             for (int y = yStart; y <= yEnd; y++)
@@ -153,7 +153,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             }
 
 	//	ROS_INFO("Point (%f,%f) -> IND: %d -> obstacle dist: %f", xp, yp, ind, sqrt(minRange)*msg->info.resolution);
-		ROS_INFO("dist %f    range: %f", sqrt(minRange)*msg->info.resolution, range);
+	//	ROS_INFO("dist %f    range: %f", sqrt(minRange)*msg->info.resolution, range);
             if(sqrt(minRange)*msg->info.resolution < range)
                 reachability_grid_ptr[ind] = 0.0;
             else
@@ -322,7 +322,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 if(entropy_client_ptr->call(entropy_srv) > 0)
                 {
                     //ROS_INFO("obstacle distance: %f", entropy_srv.response.obstacle);
-                    ROS_INFO("estimated entropy: %f", entropy_srv.response.value);
+            //        ROS_INFO("estimated entropy: %f", entropy_srv.response.value);
                     if(entropy_srv.response.obstacle > 0.25)
                         reachability_grid_ptr[ind] = 1.0;
                     else
