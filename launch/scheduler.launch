@@ -1,0 +1,5 @@
+<launch>
+
+	<node pkg="spatiotemporalexploration" type="exploration_scheduler" name="scheduler" output="screen"></node>
+	
+</launch>
