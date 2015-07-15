@@ -118,7 +118,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
     {
         for(int i = 0; i < numCellsX; i++)
         {
-            ROS_INFO("Grid ind: %d", ind);
+            //ROS_INFO("Grid ind: %d", ind);
             xp = MIN_X + entropies_step*(i+0.5);
             yp = MIN_Y + entropies_step*(j+0.5);
 
@@ -170,6 +170,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 
     //Publish grid
     reachability_markers.markers.push_back(reachable_point);
+    reach_pub_ptr->publish(reachability_markers);
     ROS_INFO("Published reacheability grid.");
 
     map_received = true;
