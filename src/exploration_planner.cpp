@@ -115,7 +115,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
         for(int i = 0; i < numCellsX; i++)
         {
             xp = MIN_X + entropies_step*(i+0.5);
-            xp = MIN_Y + entropies_step*(j+0.5);
+            yp = MIN_Y + entropies_step*(j+0.5);
 
             int xStart = (int)((xp-oX-range)/msg->info.resolution);
             int xEnd   = (int)((xp-oX+range)/msg->info.resolution);
@@ -133,7 +133,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             int cellIndex=0;
             for (int y = yStart; y <= yEnd; y++)
             {
-                cellIndex = DIM_X*(y+DIM_Y);
+                cellIndex = DIM_X*y;
                 for (int x = xStart; x <= xEnd; x++)
                 {
                     if (msg->data[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
