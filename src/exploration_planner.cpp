@@ -53,6 +53,7 @@ ros::ServiceClient *entropy_client_ptr;
 
 ros::Publisher *points_pub_ptr, *max_pub_ptr, *reach_pub_ptr;
 
+
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
 
@@ -86,92 +87,91 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
 
 void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 {
-    if(!map_received)
+
+    ROS_INFO("Received no go map.");
+    float range = entropies_step/2;
+    float rangeLimit = range/msg->info.resolution;
+    float minRange = rangeLimit*rangeLimit*2;//!!!
+    float oX = msg->info.origin.position.x, oY = msg->info.origin.position.x;
+
+    visualization_msgs::MarkerArray reachability_markers;
+    visualization_msgs::Marker reachable_point;
+    reachable_point.header.frame_id = "/map";
+    reachable_point.header.stamp = ros::Time::now();
+    reachable_point.ns = "reachable_locations";
+    reachable_point.action = visualization_msgs::Marker::ADD;
+    reachable_point.type = visualization_msgs::Marker::CUBE;
+    reachable_point.color.a = 0.8;
+    reachable_point.color.b = 0.0;
+    reachable_point.pose.position.z = 0.1;
+    reachable_point.pose.orientation.w = 1.0;
+    reachable_point.scale.x = entropies_step;
+    reachable_point.scale.y = entropies_step;
+
+    ROS_INFO("Updating grid...");
+    float xp, yp;
+    int ind = 0;
+
+    for(int j = 0; j < numCellsY; j++)
     {
-        ROS_INFO("Received no go map.");
-        float range = entropies_step/2;
-        float rangeLimit = range/msg->info.resolution;
-        float minRange = rangeLimit*rangeLimit*2;//!!!
-        float oX = msg->info.origin.position.x, oY = msg->info.origin.position.x;
-
-        visualization_msgs::MarkerArray reachability_markers;
-        visualization_msgs::Marker reachable_point;
-        reachable_point.header.frame_id = "/map";
-        reachable_point.header.stamp = ros::Time::now();
-        reachable_point.ns = "reachable_locations";
-        reachable_point.action = visualization_msgs::Marker::ADD;
-        reachable_point.type = visualization_msgs::Marker::CUBE;
-        reachable_point.color.a = 0.8;
-        reachable_point.color.b = 0.0;
-        reachable_point.pose.position.z = 0.1;
-        reachable_point.pose.orientation.w = 1.0;
-        reachable_point.scale.x = entropies_step;
-        reachable_point.scale.y = entropies_step;
-
-        ROS_INFO("Updating grid...");
-        float xp, yp;
-        int ind = 0;
-
-        for(int j = 0; j < numCellsY; j++)
+        for(int i = 0; i < numCellsX; i++)
         {
-            for(int i = 0; i < numCellsX; i++)
+            ROS_INFO("Grid ind: %d", ind);
+            xp = MIN_X + entropies_step*(i+0.5);
+            yp = MIN_Y + entropies_step*(j+0.5);
+
+            int xStart = (int)((xp-oX-range)/msg->info.resolution);
+            int xEnd   = (int)((xp-oX+range)/msg->info.resolution);
+            int yStart = (int)((yp-oY-range)/msg->info.resolution);
+            int yEnd   = (int)((yp-oY+range)/msg->info.resolution);
+            int xM = (int)((i-oX)/msg->info.resolution);
+            int yM = (int)((j-oY)/msg->info.resolution);
+            xM = fmax(fmin(xM,DIM_X-1),0);
+            yM = fmax(fmin(yM,DIM_Y-1),0);
+            xStart = fmax(fmin(xStart,DIM_X-1),0);
+            xEnd   = fmax(fmin(xEnd,DIM_X-1),0);
+            yStart = fmax(fmin(yStart,DIM_Y-1),0);
+            yEnd   = fmax(fmin(yEnd,DIM_Y-1),0);
+
+            int cellIndex=0;
+            for (int y = yStart; y <= yEnd; y++)
             {
-                ROS_INFO("Grid ind: %d", ind);
-                xp = MIN_X + entropies_step*(i+0.5);
-                yp = MIN_Y + entropies_step*(j+0.5);
-
-                int xStart = (int)((xp-oX-range)/msg->info.resolution);
-                int xEnd   = (int)((xp-oX+range)/msg->info.resolution);
-                int yStart = (int)((yp-oY-range)/msg->info.resolution);
-                int yEnd   = (int)((yp-oY+range)/msg->info.resolution);
-                int xM = (int)((i-oX)/msg->info.resolution);
-                int yM = (int)((j-oY)/msg->info.resolution);
-                xM = fmax(fmin(xM,DIM_X-1),0);
-                yM = fmax(fmin(yM,DIM_Y-1),0);
-                xStart = fmax(fmin(xStart,DIM_X-1),0);
-                xEnd   = fmax(fmin(xEnd,DIM_X-1),0);
-                yStart = fmax(fmin(yStart,DIM_Y-1),0);
-                yEnd   = fmax(fmin(yEnd,DIM_Y-1),0);
-
-                int cellIndex=0;
-                for (int y = yStart; y <= yEnd; y++)
+                cellIndex = DIM_X*y;
+                for (int x = xStart; x <= xEnd; x++)
                 {
-                    cellIndex = DIM_X*y;
-                    for (int x = xStart; x <= xEnd; x++)
+                    if (msg->data[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
                     {
-                        if (msg->data[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
-                        {
-                            minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
-                        }
+                        minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
                     }
                 }
-
-                if(sqrt(minRange)*entropies_step < range)
-                    reachability_grid_ptr[ind] = 0.0;
-                else
-                    reachability_grid_ptr[ind] = 1.0;
-
-                //Reachability Markers:
-                reachable_point.pose.position.x = xp;
-                reachable_point.pose.position.y = yp;
-                reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
-                reachable_point.color.g = reachability_grid_ptr[ind];
-                reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
-                reachable_point.pose.position.z = reachable_point.scale.z/2;
-                reachability_markers.markers.push_back(reachable_point);
-
             }
-            ind++;
+
+            if(sqrt(minRange)*entropies_step < range)
+                reachability_grid_ptr[ind] = 0.0;
+            else
+                reachability_grid_ptr[ind] = 1.0;
+
+            //Reachability Markers:
+            reachable_point.pose.position.x = xp;
+            reachable_point.pose.position.y = yp;
+            reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
+            reachable_point.color.g = reachability_grid_ptr[ind];
+            reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
+            reachable_point.pose.position.z = reachable_point.scale.z/2;
+            reachability_markers.markers.push_back(reachable_point);
+
         }
-
-        ROS_INFO("Finished.");
-
-        //Publish grid
-        reachability_markers.markers.push_back(reachable_point);
-        ROS_INFO("Published reacheability grid.");
-
-        map_received = true;
+        ind++;
     }
+
+    ROS_INFO("Finished.");
+
+    //Publish grid
+    reachability_markers.markers.push_back(reachable_point);
+    ROS_INFO("Published reacheability grid.");
+
+    map_received = true;
+
 
 }
 
@@ -525,7 +525,9 @@ int main(int argc,char *argv[])
 
 
     ROS_INFO("Waiting for the no go map!");
-    while(!map_received);
+    while(!map_received)
+        ROS_INFO("map received %d", map_received);
+
     map_sub.shutdown();
 
     ROS_INFO("Reachability initialized! Starting planer action server...");
