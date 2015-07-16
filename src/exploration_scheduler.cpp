@@ -13,6 +13,7 @@ typedef actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> Pla
 uint32_t timeStamps[SLOTS];
 unsigned char plans[SLOTS];
 int len=0;
+bool runOnce = false;
 
 void loadPlan(const char* name)
 {
@@ -37,7 +38,8 @@ void loadPlan(const char* name)
 
 int main(int argc,char *argv[])
 {
-	loadPlan(argv[1]);
+	if (argc == 1)	runOnce = true;
+	if (runOnce) ROS_INFO("Exploration scheduler: No schedule received starting at once."); else loadPlan(argv[1]);
 	ros::init(argc, argv, "exploration_scheduler");
 	ros::NodeHandle n;
 
@@ -55,17 +57,23 @@ int main(int argc,char *argv[])
 	spatiotemporalexploration::PlanGoal plan_goal;
 	spatiotemporalexploration::ExecutionGoal exec_goal;
 
-
-	while (ros::ok())
+	do
 	{
 		int position = 0;
 		ros::Time currentTime = ros::Time::now();
-		while (timeStamps[position] < currentTime.sec && position < len) position++;
-		for (int i = 0;i<(timeStamps[position]-currentTime.sec)/10;i++){
-			printf("Actual plan %i commencing in %i.\n",plans[position],timeStamps[position]-currentTime.sec-i*10);
-			sleep(10);
+		if (runOnce == false)
+		{
+			while (timeStamps[position] < currentTime.sec && position < len) position++;
+			for (int i = 0;i<(timeStamps[position]-currentTime.sec)/10;i++){
+				printf("Actual plan %i commencing in %i.\n",plans[position],timeStamps[position]-currentTime.sec-i*10);
+				sleep(10);
+			}
+			sleep((timeStamps[position]-currentTime.sec)%10+1);
+		}else{
+			//create a one-time plan
+			position = 0;
+			plans[position] = 2;
 		}
-		sleep((timeStamps[position]-currentTime.sec)%10+1);
 		time_t timeNow;
 		time(&timeNow);
 		char timeStr[100];
@@ -117,6 +125,6 @@ int main(int argc,char *argv[])
 			ros::spinOnce();
 
 		}
-	}
+	} while (ros::ok() && runOnce == false);
 	return 0;
 }
