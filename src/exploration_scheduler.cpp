@@ -72,7 +72,8 @@ int main(int argc,char *argv[])
 		}else{
 			//create a one-time plan
 			position = 0;
-			plans[position] = 2;
+			plans[position] = 1;
+			timeStamps[position] = currentTime.sec;
 		}
 		time_t timeNow;
 		time(&timeNow);
@@ -87,7 +88,7 @@ int main(int argc,char *argv[])
 			//generate the times for the entire day
 
 			//asks for a plan
-			plan_goal.max_loc = 10; //number ao local maximas
+			plan_goal.max_loc = 2; //number ao local maximas
 			if (plans[position] == 2) plan_goal.t = 0;
 			if (plans[position] == 1) plan_goal.t = timeStamps[position];
 			ac_plan.sendGoal(plan_goal);

@@ -294,7 +294,7 @@ float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,ui
 		//aux[cellIndex] = 2;
 		rayIndex=castLength;
 	}
-	printf("Entropy %.0f took %i ms to preprocess, %i ms to prepare, %i ms to raycast and %i to calculate.\n",entropy,preprocess,prepare,calculate,timer.getTime());
+	//printf("Entropy %.0f took %i ms to preprocess, %i ms to prepare, %i ms to raycast and %i to calculate.\n",entropy,preprocess,prepare,calculate,timer.getTime());
 	return entropy;
 }
 
@@ -351,7 +351,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			}
 		}
 	}
-	printf("rescaling from %i rays to %i rays took %i ms, ",size,processed,timer.getTime());
+	//printf("rescaling from %i rays to %i rays took %i ms, ",size,processed,timer.getTime());
 	//raycast origin in float and int 
 	int i = 0;
 	//calculate the point of origin
@@ -424,7 +424,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					dumInf = fmax(fmin(probs[index],maxProb),minProb);
 					obtainedInformation += -(log2f(1-dumInf)-residualInformation);
 					probs[index] = minProb;
-				       	frelements[final].add(times,zeroVal,1);	
+				       	frelements[index].add(times,zeroVal,1);	
 				}
 				if (bx < by && bx < bz)
 				{
@@ -444,7 +444,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			calculate += timer.getTime();
 		}
 	}
-	printf("preparation %i ms and update of %i cells took %i ms.\n",prepare,cells,calculate);
+	//printf("preparation %i ms and update of %i cells took %i ms.\n",prepare,cells,calculate);
 	return obtainedInformation;
 } 
 
@@ -574,12 +574,17 @@ void CFremenGrid::buildLimits(float* grid)
 
 bool CFremenGrid::recalculate(uint32_t timestamp)
 {
+	int sum = 0;
 	if (timestamp == 0)  memcpy(predicted,probs,numCells*sizeof(float));
 	else if (lastTimeStamp !=timestamp)
 	{
-		lastTimeStamp =timestamp;
-		for (int i =0;i<numCells;i++) predicted[i] = frelements[i].estimate(timestamp,5);
+		for (int i =0;i<numCells;i++){
+			 predicted[i] = frelements[i].estimate(timestamp,0);
+			 if (predicted[i] == 0.5) sum++;
+		}
+		printf("Recalculating with timestamp %i %i %i %i\n",timestamp,lastTimeStamp,numCells,sum);
 	}
+	lastTimeStamp =timestamp;
 	buildLimits(predicted);
 }
 

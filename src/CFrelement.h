@@ -68,6 +68,7 @@ class CFrelement
 		int measurements,order,periodicities;
 		uint32_t firstTime;
 		uint32_t  lastTime;
+		unsigned char lastMeasurement;
 };
 
 #endif

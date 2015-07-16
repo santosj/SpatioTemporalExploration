@@ -20,8 +20,8 @@ CFrelement::CFrelement()
 	gain = 0.5;
 	order = 0;
 	periodicities = 0;
-	firstTime = -1;
-	lastTime = -1;
+	firstTime = 1;
+	lastTime = 1;
 	measurements = 0;
 }
 
@@ -34,8 +34,8 @@ void CFrelement::init()
 	gain = 0.5;
 	order = 0;
 	periodicities = 0;
-	firstTime = -1;
-	lastTime = -1;
+	firstTime = 1;
+	lastTime = 1;
 	measurements = 0;
 }
 
@@ -61,10 +61,14 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	//discard already known observations 
 	for (int i=0;i<length;i++)if (times[i] <= lastTime)firstIndex++;
 	int numUpdated = length-firstIndex;
-	lastTime = times[length-1];
 
 	//verify if there is an actual update
+	//printf("Update %i %i %i\n",numUpdated,times[0],lastTime);
 	if (numUpdated <= 0)return numUpdated;
+
+	//remember the latest measurement
+	lastTime = times[length-1];
+	lastMeasurement = states[length-1];
 
 	SFrelement tmp[NUM_PERIODICITIES];
 	for (int i=0;i<NUM_PERIODICITIES;i++) tmp[i].period = (24*3600)/(i+1); 
@@ -209,8 +213,9 @@ float CFrelement::estimate(uint32_t time,int orderi)
 {
 	float saturation = 0.05;
 	float estimate = gain;
-
 	for (int i = 0;i<orderi;i++) estimate+=2*frelements[i].amplitude*cos(time/frelements[i].period*2*M_PI-frelements[i].phase);
+	//float decayConstant = expf(-((float)(lastTime-time))/3600);
+	//estimate = lastMeasurement*decayConstant+(1-decayConstant)*estimate;	
 	if (estimate > 1.0-saturation) estimate =  1.0-saturation;
 	if (estimate < 0.0+saturation) estimate =  0.0+saturation;
 	return estimate; 
