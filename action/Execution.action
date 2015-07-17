@@ -1,9 +1,12 @@
 # Define the goal
 geometry_msgs/PoseArray locations
 int64 t
+bool replan
 ---
 # Define the result
 float32 information
+bool success
+int64 last_location
 ---
 # Define a feedback message
 string current_goal

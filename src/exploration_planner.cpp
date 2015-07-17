@@ -191,9 +191,13 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
 
 void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg)
 {
+    ROS_INFO("Received list of reachable points.");
+
     int nr_points = (int) msg->x.size();
     int ind;
     int x,y;
+
+    ROS_INFO("Updating reachability grid.");
 
     for(int i = 0; i < nr_points; i++)
     {
@@ -243,7 +247,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
     }
     else
     {
-        ROS_ERROR("failed to save grid");
+        ROS_WARN("Failed to save grid!");
     }
 }
 

@@ -83,7 +83,7 @@ int main(int argc,char *argv[])
 		sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
 		if (plans[position] > 0)
 		{
-			ROS_INFO("asking for a plan");
+            ROS_INFO("Asking for a plan...");
 
 			//generate the times for the entire day
 
@@ -97,7 +97,7 @@ int main(int argc,char *argv[])
 			if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 			{
 				ROS_INFO("Received a plan with possible information gain of %f",ac_plan.getResult()->information);
-				ROS_INFO("executing plan");
+                ROS_INFO("Sending plan to be executed!");
 
 				//executes plan
 				exec_goal.locations = ac_plan.getResult()->locations;
@@ -107,21 +107,76 @@ int main(int argc,char *argv[])
 
 				/*save the map*/
 				spatiotemporalexploration::SaveLoad saveInfo;
-								saveInfo.request.filename = fileName; 
+                saveInfo.request.filename = fileName;
 				saveInfo.request.order = 0;
 				saveInfo.request.lossy = false;
 				if(saveGridService.call(saveInfo) > 0) ROS_INFO("Grid save successful");
 
 				if (ac_execution.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 				{
-					ROS_INFO("plan completed");
+                    ROS_INFO("Executioner finished its task!");
+                    //spatiotemporalexploration::ExecutionActionResult exec_result = ac_execution.getResult();
+
+                    if(ac_execution.getResult()->success)
+                    {
+                        ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
+                    }
+                    else
+                    {
+                        ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->last_location, (int) ac_plan.getResult()->locations.poses.size());
+
+                        int remaining_time = timeStamps[position + 1] - ros::Time::now().sec;
+
+                        while(remaining_time < 5 && !ac_execution.getResult()->success && ros::ok())//5 min (dynamic reconfigure)
+                        {
+                            ROS_INFO("Time remaining until next task: %d minutes.", remaining_time);
+                            ROS_INFO("Still have time! Asking for new plan!");
+
+                            if (plans[position] == 2) plan_goal.t = 0;
+                            if (plans[position] == 1) plan_goal.t = ros::Time::now().sec;
+
+                            plan_goal.max_loc = (int) ac_plan.getResult()->locations.poses.size() - (int) ac_execution.getResult()->last_location;
+                            ac_plan.sendGoal(plan_goal);
+                            ac_plan.waitForResult();
+
+                            if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                            {
+                                ROS_INFO("Receive plan!");
+                                ROS_INFO("Sending plan to the executioner.");
+
+                                exec_goal.locations = ac_plan.getResult()->locations;
+                                exec_goal.t = plan_goal.t;
+                                ac_execution.sendGoal(exec_goal);
+                                ac_execution.waitForResult();
+
+                                if (ac_execution.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                                {
+                                    ROS_INFO("Executioner finished its task!");
+                                    if(ac_execution.getResult()->success)
+                                    {
+                                        ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
+                                        break;
+                                    }
+                                    else
+                                        ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->last_location, (int) ac_plan.getResult()->locations.poses.size());
+                                }
+                                else
+                                {
+                                    ROS_INFO("Exectuioner server failed!");
+                                }
+
+                            }
+                        }
+                        ROS_INFO("Time remaining until next task: %d minutes.", remaining_time);
+                        ROS_INFO("There is no time for a new plan. Going to the charghing station!");
+                    }
 				}
 			}
 			else
 			{
-				ROS_INFO("plan failed!");
+                ROS_INFO("Plan server failed!");
 			}
-			ROS_INFO("done!");
+            ROS_INFO("DONE!");
 
 			ros::spinOnce();
 

@@ -100,10 +100,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;
     spatiotemporalexploration::ExecutionFeedback feedback;
-
-	//Locations to explore
-    geometry_msgs::PoseArray exploration_goals;
-    exploration_goals.poses = goal->locations.poses;
+    spatiotemporalexploration::ExecutionResult execution_result;
 
     sleep(1);
 
@@ -112,9 +109,13 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     float pan[] =  { 0.00, 0.90, 1.80, 2.70, 2.70, 1.80, 0.90, 0.00,-0.90,-1.80,-2.70,-2.70,-1.80,-0.90,0.00};
     float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
 
-	//number of locations to visit
+
+    //Locations to explore
+    geometry_msgs::PoseArray exploration_goals;
+    exploration_goals.poses = goal->locations.poses;
+
+    //number of locations to visit
     int n = (int) exploration_goals.poses.size(); //goal->locations.poses.size();
-    int new_n;
 
     ROS_INFO("The plan received has %d locations to visit.", n);
 
@@ -139,152 +140,191 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     current_goal.action_server = "move_base";
     current_goal.target_pose.header.frame_id = "map";
 
+
+    //If it is a replan then, the robot will avoid the first point (located in front of the charging station)
     int i = 0;
+    if(goal->replan)
+        n = 1;
+
+    //for each point received the robot will move there and take measurements
     while (i < n)
     {
-        unsigned int retries = 0;
+        unsigned int retries = 0;//number of recovery attempts
         char cr_goal[10];
         sprintf(cr_goal, "%d/%d", i, n);
         feedback.current_goal = cr_goal;
         feedback.time_remaining = 0;//TODO
         as->publishFeedback(feedback);
 
-	//move base to the first goal
+        //move to location i
         current_goal.target_pose.pose = goal->locations.poses[i];
-        ROS_INFO("Moving to location %d/%d -> (%f,%f)",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
+        ROS_INFO("Moving to location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
         ac_nav_ptr->sendGoal(current_goal);
 
-	//wait for success
-        //            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+        //wait for success
         ac_nav_ptr->waitForResult(ros::Duration(0.0));
 
         if(ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//if it fails tries more 3 times (recovery behaviours)
         {
-            ROS_WARN("Failed to reach goal!");
+            ROS_WARN("Failed to move to location %d: (%f, %f)!", i, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
             while(retries < 2 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
             {
                 ac_nav_ptr->sendGoal(current_goal);
-                ROS_INFO("Recovery behaviour nr: %d", retries);
-                //while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
+                ROS_INFO("Trying to recover! Attempt number: %d", retries + 1);
                 ac_nav_ptr->waitForResult(ros::Duration(0.0));
                 retries++;
 
             }
 
 
-            if(retries >= 2)
+            if(retries >= 2 && ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
             {
-                ROS_INFO("Recovery behaviours failed! Asking for a new plan...");
-    		ROS_WARN("Point not reacheable! Taking measurements and moving to the next point..."); 
+                ROS_WARN("Recovery behaviours failed!");
+                ROS_INFO("Taking measurment in the current location.");
 
-		 //ask for new plan with n-i locations to visit
-                spatiotemporalexploration::PlanGoal plan_goal;
-                plan_goal.max_loc = n - i;
-                ros::Time currentTime = ros::Time::now();
-                plan_goal.t = currentTime.sec;
-                ac_plan_ptr->sendGoal(plan_goal);
-                ac_plan_ptr->waitForResult();
-
-                if (ac_plan_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                ros::spinOnce();
+                while (ros::ok() && point < numPoints)
                 {
-                    ROS_INFO("Received a new plan with possible information gain of %f",ac_plan_ptr->getResult()->information);
-                    ROS_INFO("executing plan");
-                    //ac_plan_ptr->getResult()->locations;
-                    n = (int) ac_plan_ptr->getResult()->locations.poses.size();
-                    exploration_goals.poses.clear();
-                    exploration_goals.poses = ac_plan_ptr->getResult()->locations.poses;
-                    i = 0;
-                }
-                else
-                {
-                    ROS_INFO("Failed to obtain new plan!");
-                    ROS_INFO("Going to next point in the initial plan...");
-                }
-            }
-
-        
-
-            reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
-            reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-            if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-            {
-                ROS_INFO("Monitored navigation: SUCCEEDED! taking measurements!");
-                reachable_points.value.push_back(1);
-            }
-            else
-            {
-                ROS_WARN("Point not reacheable! Taking measurements and moving to the next point...");
-                reachable_points.value.push_back(0);
-            }
-
-            point = 0;
-            movePtu(pan[point],tilt[point]);
-
-            ros::spinOnce();
-            while (ros::ok() && point < numPoints)
-            {
-                measure_srv.request.stamp = 0.0;
-                if (ptuMovementFinished > 10)
-                {
-                    if(measure_client_ptr->call(measure_srv))
+                    measure_srv.request.stamp = 0.0;
+                    if (ptuMovementFinished > 10)
                     {
-                        ROS_INFO("Measure added to grid!");
-                    }
-                    else
-                    {
-                        ROS_ERROR("Failed to call measure service");
-                        exit(1);
-                    }
+                        if(measure_client_ptr->call(measure_srv))
+                        {
+                            ROS_INFO("Measure added to grid!");
+                        }
+                        else
+                        {
+                            ROS_ERROR("Failed to call measure service");
+                            exit(1);
+                        }
 
-                    point++;
-                    movePtu(pan[point],tilt[point]);
-                    ros::spinOnce();
-                    usleep(500000);
-                    if(drawCells){
-                        visualize_srv.request.red = visualize_srv.request.blue = 0.0;
-                        visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
-                        visualize_srv.request.minProbability = 0.9;
-                        visualize_srv.request.maxProbability = 1.0;
-                        visualize_srv.request.name = "occupied";
-                        visualize_srv.request.type = 0;
-                        visualize_client_ptr->call(visualize_srv);
+                        point++;
+                        movePtu(pan[point],tilt[point]);
                         ros::spinOnce();
-                        usleep(100000);
-                        if (drawEmptyCells){
-                            visualize_srv.request.green = 0.0;
-                            visualize_srv.request.red = 1.0;
-                            visualize_srv.request.minProbability = 0.0;
-                            visualize_srv.request.maxProbability = 0.1;
-                            visualize_srv.request.alpha = 0.005;
-                            visualize_srv.request.name = "free";
+                        usleep(500000);
+                        if(drawCells){
+                            visualize_srv.request.red = visualize_srv.request.blue = 0.0;
+                            visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
+                            visualize_srv.request.minProbability = 0.9;
+                            visualize_srv.request.maxProbability = 1.0;
+                            visualize_srv.request.name = "occupied";
                             visualize_srv.request.type = 0;
                             visualize_client_ptr->call(visualize_srv);
                             ros::spinOnce();
                             usleep(100000);
+                            if (drawEmptyCells){
+                                visualize_srv.request.green = 0.0;
+                                visualize_srv.request.red = 1.0;
+                                visualize_srv.request.minProbability = 0.0;
+                                visualize_srv.request.maxProbability = 0.1;
+                                visualize_srv.request.alpha = 0.005;
+                                visualize_srv.request.name = "free";
+                                visualize_srv.request.type = 0;
+                                visualize_client_ptr->call(visualize_srv);
+                                ros::spinOnce();
+                                usleep(100000);
+                            }
                         }
                     }
+                    ros::spinOnce();
                 }
-                ros::spinOnce();
+
+                //PTU initial position
+                point = 0;
+                movePtu(pan[point],tilt[point]);
+
+                //Reachability grid (point not reachable)
+                reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
+                reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
+                reachable_points.value.push_back(0);
+                execution_result.success = false;
+                execution_result.last_location = i;
+                break;
+
             }
 
         }
-        movePtu(0.0,0.0);
-	i++; 
-}
+        else
+        {
+            if(i != n-1)//not the last point (located in front of the charging station)
+            {
+                ROS_INFO("Reached location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
+                ROS_INFO("Taking measurements...");
 
-    ROS_INFO("My work is done! going to charging station...");
+                ros::spinOnce();
+                while (ros::ok() && point < numPoints)
+                {
+                    measure_srv.request.stamp = 0.0;
+                    if (ptuMovementFinished > 10)
+                    {
+                        if(measure_client_ptr->call(measure_srv))
+                        {
+                            ROS_INFO("Measure added to grid!");
+                        }
+                        else
+                        {
+                            ROS_ERROR("Failed to call measure service");
+                            exit(1);
+                        }
+
+                        point++;
+                        movePtu(pan[point],tilt[point]);
+                        ros::spinOnce();
+                        usleep(500000);
+                        if(drawCells){
+                            visualize_srv.request.red = visualize_srv.request.blue = 0.0;
+                            visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
+                            visualize_srv.request.minProbability = 0.9;
+                            visualize_srv.request.maxProbability = 1.0;
+                            visualize_srv.request.name = "occupied";
+                            visualize_srv.request.type = 0;
+                            visualize_client_ptr->call(visualize_srv);
+                            ros::spinOnce();
+                            usleep(100000);
+                            if (drawEmptyCells){
+                                visualize_srv.request.green = 0.0;
+                                visualize_srv.request.red = 1.0;
+                                visualize_srv.request.minProbability = 0.0;
+                                visualize_srv.request.maxProbability = 0.1;
+                                visualize_srv.request.alpha = 0.005;
+                                visualize_srv.request.name = "free";
+                                visualize_srv.request.type = 0;
+                                visualize_client_ptr->call(visualize_srv);
+                                ros::spinOnce();
+                                usleep(100000);
+                            }
+                        }
+                    }
+                    ros::spinOnce();
+                }
+
+                //Reachability grid (point not reachable)
+                reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
+                reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
+                reachable_points.value.push_back(1);
+            }
+            else
+            {
+                ROS_INFO("Plan executed with sucess! Going to the charging station.");
+                execution_result.success = true;
+                execution_result.last_location = i;
+                //Docking
+                current_goal.action_server = "docking";
+                current_goal.target_pose.header.frame_id = "map";
+                ac_nav_ptr->sendGoal(current_goal);
+                ac_nav_ptr->waitForResult(ros::Duration(0.0));
+                if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
+                ROS_ERROR("docking failed!");
+            }
+        }
+
+        i++;
+    }
+
+    movePtu(0.0,0.0);
+
     reach_pub_ptr->publish(reachable_points);
-
-    //Docking
-    current_goal.action_server = "docking";
-    current_goal.target_pose.header.frame_id = "map";
-    ac_nav_ptr->sendGoal(current_goal);
-    ac_nav_ptr->waitForResult(ros::Duration(0.0));
-
-    if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
-        ROS_ERROR("docking failed!");
-
-    as->setSucceeded();
+    as->setSucceeded(execution_result);
 
 }
 
