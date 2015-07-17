@@ -101,6 +101,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;
     spatiotemporalexploration::ExecutionFeedback feedback;
 
+	//Locations to explore
     geometry_msgs::PoseArray exploration_goals;
     exploration_goals.poses = goal->locations.poses;
 
@@ -111,6 +112,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     float pan[] =  { 0.00, 0.90, 1.80, 2.70, 2.70, 1.80, 0.90, 0.00,-0.90,-1.80,-2.70,-2.70,-1.80,-0.90,0.00};
     float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
 
+	//number of locations to visit
     int n = (int) exploration_goals.poses.size(); //goal->locations.poses.size();
     int new_n;
 
@@ -137,8 +139,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     current_goal.action_server = "move_base";
     current_goal.target_pose.header.frame_id = "map";
 
-
-    for(int i = 0; i < n; i++)//number of locations to visit
+    int i = 0;
+    while (i < n)
     {
         unsigned int retries = 0;
         char cr_goal[10];
@@ -147,10 +149,12 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         feedback.time_remaining = 0;//TODO
         as->publishFeedback(feedback);
 
+	//move base to the first goal
         current_goal.target_pose.pose = goal->locations.poses[i];
         ROS_INFO("Moving to location %d/%d -> (%f,%f)",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
         ac_nav_ptr->sendGoal(current_goal);
 
+	//wait for success
         //            while(ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::ACTIVE || ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::PENDING);
         ac_nav_ptr->waitForResult(ros::Duration(0.0));
 
@@ -170,8 +174,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
             if(retries >= 2)
             {
-                ROS_INFO("Recovery behaviours failed! Asking dor a new plan...");
-                //ask for new plan with n-i locations to visit
+                ROS_INFO("Recovery behaviours failed! Asking for a new plan...");
+    		ROS_WARN("Point not reacheable! Taking measurements and moving to the next point..."); 
+
+		 //ask for new plan with n-i locations to visit
                 spatiotemporalexploration::PlanGoal plan_goal;
                 plan_goal.max_loc = n - i;
                 ros::Time currentTime = ros::Time::now();
@@ -188,7 +194,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     exploration_goals.poses.clear();
                     exploration_goals.poses = ac_plan_ptr->getResult()->locations.poses;
                     i = 0;
-
                 }
                 else
                 {
@@ -197,9 +202,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 }
             }
 
-        }
+        
 
-        if (i>0 && i < n-1){
             reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
             reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
             if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
@@ -265,7 +269,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
         }
         movePtu(0.0,0.0);
-    }
+	i++; 
+}
 
     ROS_INFO("My work is done! going to charging station...");
     reach_pub_ptr->publish(reachable_points);

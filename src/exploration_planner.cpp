@@ -24,6 +24,7 @@ using namespace std;
 double MIN_X,MIN_Y,MIN_Z,RESOLUTION;
 int DIM_X,DIM_Y,DIM_Z;
 bool map_received = false;
+int nr_previous_maximas = 0;
 
 ros::ServiceClient *save_client_ptr, *plan_client_ptr;
 
@@ -297,6 +298,16 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     local_point.scale.x = entropies_step;
     local_point.scale.y = entropies_step;
 
+	//delete existent maxima markers
+	local_point.action = visualization_msgs::Marker::DELETE;
+	for(int i = 0; i < nr_previous_maximas; i++)
+	{
+		local_point.id = i;
+		maximas_makers.markers.push_back(local_point);
+	}
+	max_pub_ptr->publish(maximas_makers);
+	local_point.action = visualization_msgs::Marker::ADD;
+
     //auxiliary entropies grid:
     double entropies_aux[numCellsX + radius*2][numCellsY + radius*2];
     memset(entropies_aux, 0, sizeof entropies_aux);
@@ -453,7 +464,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         result.locations.poses.push_back(pose_aux);
     }
 
-
+	nr_previous_maximas = goal->max_loc;
     ROS_INFO("Plan completed! Sending results...");
 
     //send goals
