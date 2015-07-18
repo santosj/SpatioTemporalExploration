@@ -182,6 +182,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 ROS_WARN("Recovery behaviours failed!");
                 ROS_INFO("Taking measurment in the current location.");
 
+                point = 0;
+
                 ros::spinOnce();
                 while (ros::ok() && point < numPoints)
                 {
@@ -246,10 +248,12 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         }
         else
         {
-            if(i != n-1)//not the last point (located in front of the charging station)
+            if(i != 0 || i != n-1)//not the last point (located in front of the charging station)
             {
                 ROS_INFO("Reached location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
                 ROS_INFO("Taking measurements...");
+
+                point = 0;
 
                 ros::spinOnce();
                 while (ros::ok() && point < numPoints)

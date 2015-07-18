@@ -91,7 +91,7 @@ int main(int argc,char *argv[])
 			//generate the times for the entire day
 
 			//asks for a plan
-			plan_goal.max_loc = 3; //number ao local maximas
+            plan_goal.max_loc = 6; //number ao local maximas
 			if (plans[position] == 2) plan_goal.t = 0;
 			if (plans[position] == 1) plan_goal.t = timeStamps[position];
 			ac_plan.sendGoal(plan_goal);
