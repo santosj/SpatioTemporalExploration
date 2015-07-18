@@ -254,7 +254,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
                 ROS_INFO("Reached location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
 
-                if(i != n-1)
+                if(i != 0)
                 {
                     ROS_INFO("Taking measurements...");
 
