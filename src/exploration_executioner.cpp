@@ -253,61 +253,65 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             {
 
                 ROS_INFO("Reached location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
-                ROS_INFO("Taking measurements...");
 
-                point = 0;
-
-                ros::spinOnce();
-                while (ros::ok() && point < numPoints)
+                if(i != n-1)
                 {
-                    measure_srv.request.stamp = 0.0;
-                    if (ptuMovementFinished > 10)
-                    {
-                        if(measure_client_ptr->call(measure_srv))
-                        {
-                            ROS_INFO("Measure added to grid!");
-                        }
-                        else
-                        {
-                            ROS_ERROR("Failed to call measure service");
-                            exit(1);
-                        }
+                    ROS_INFO("Taking measurements...");
 
-                        point++;
-                        movePtu(pan[point],tilt[point]);
-                        ros::spinOnce();
-                        usleep(500000);
-                        if(drawCells){
-                            visualize_srv.request.red = visualize_srv.request.blue = 0.0;
-                            visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
-                            visualize_srv.request.minProbability = 0.9;
-                            visualize_srv.request.maxProbability = 1.0;
-                            visualize_srv.request.name = "occupied";
-                            visualize_srv.request.type = 0;
-                            visualize_client_ptr->call(visualize_srv);
+                    point = 0;
+
+                    ros::spinOnce();
+                    while (ros::ok() && point < numPoints)
+                    {
+                        measure_srv.request.stamp = 0.0;
+                        if (ptuMovementFinished > 10)
+                        {
+                            if(measure_client_ptr->call(measure_srv))
+                            {
+                                ROS_INFO("Measure added to grid!");
+                            }
+                            else
+                            {
+                                ROS_ERROR("Failed to call measure service");
+                                exit(1);
+                            }
+
+                            point++;
+                            movePtu(pan[point],tilt[point]);
                             ros::spinOnce();
-                            usleep(100000);
-                            if (drawEmptyCells){
-                                visualize_srv.request.green = 0.0;
-                                visualize_srv.request.red = 1.0;
-                                visualize_srv.request.minProbability = 0.0;
-                                visualize_srv.request.maxProbability = 0.1;
-                                visualize_srv.request.alpha = 0.005;
-                                visualize_srv.request.name = "free";
+                            usleep(500000);
+                            if(drawCells){
+                                visualize_srv.request.red = visualize_srv.request.blue = 0.0;
+                                visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
+                                visualize_srv.request.minProbability = 0.9;
+                                visualize_srv.request.maxProbability = 1.0;
+                                visualize_srv.request.name = "occupied";
                                 visualize_srv.request.type = 0;
                                 visualize_client_ptr->call(visualize_srv);
                                 ros::spinOnce();
                                 usleep(100000);
+                                if (drawEmptyCells){
+                                    visualize_srv.request.green = 0.0;
+                                    visualize_srv.request.red = 1.0;
+                                    visualize_srv.request.minProbability = 0.0;
+                                    visualize_srv.request.maxProbability = 0.1;
+                                    visualize_srv.request.alpha = 0.005;
+                                    visualize_srv.request.name = "free";
+                                    visualize_srv.request.type = 0;
+                                    visualize_client_ptr->call(visualize_srv);
+                                    ros::spinOnce();
+                                    usleep(100000);
+                                }
                             }
                         }
+                        ros::spinOnce();
                     }
-                    ros::spinOnce();
-                }
 
-                //Reachability grid (point not reachable)
-                reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
-                reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-                reachable_points.value.push_back(1);
+                    //Reachability grid (point not reachable)
+                    reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
+                    reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
+                    reachable_points.value.push_back(1);
+                }
             }
             else
             {
@@ -320,7 +324,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 ac_nav_ptr->sendGoal(current_goal);
                 ac_nav_ptr->waitForResult(ros::Duration(0.0));
                 if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
-                ROS_ERROR("docking failed!");
+                    ROS_ERROR("docking failed!");
             }
         }
 
