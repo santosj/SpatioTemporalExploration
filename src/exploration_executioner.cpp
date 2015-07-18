@@ -149,7 +149,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //for each point received the robot will move there and take measurements
     while (i < n)
     {
-        ROS_INFO("it: %d");
+        ROS_INFO("it: %d", i);
         unsigned int retries = 0;//number of recovery attempts
         char cr_goal[10];
         sprintf(cr_goal, "%d/%d", i, n);
