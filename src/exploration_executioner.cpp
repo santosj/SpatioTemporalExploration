@@ -248,7 +248,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         }
         else
         {
-            if(i != 0 || i != n-1)//not the last point (located in front of the charging station)
+            if(i > 0 && i < n-1)//not the last point (located in front of the charging station)
             {
                 ROS_INFO("Reached location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
                 ROS_INFO("Taking measurements...");
