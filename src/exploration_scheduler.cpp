@@ -151,15 +151,16 @@ int main(int argc,char *argv[])
 
                         bool plan_complete = ac_execution.getResult()->success;
 
-                        while(remaining_time < 5*60 && !plan_complete && ros::ok())//5 min (dynamic reconfigure)
+                        while(remaining_time > 3*60 && !plan_complete && ros::ok())//5 min (dynamic reconfigure)
                         {
 
-                            ROS_INFO("Still have time! Asking for new plan!");
+                            ROS_INFO("Still have time!");
 
                             if (plans[position] == 2) plan_goal.t = 0;
                             if (plans[position] == 1) plan_goal.t = ros::Time::now().sec;
 
                             plan_goal.max_loc = (int) ac_plan.getResult()->locations.poses.size() - (int) ac_execution.getResult()->last_location;
+                            ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc);
                             ac_plan.sendGoal(plan_goal);
                             ac_plan.waitForResult();
 
@@ -197,7 +198,7 @@ int main(int argc,char *argv[])
 
                             }
                         }
-                        ROS_INFO("Time remaining until next task: %d minutes.", remaining_time);
+                        ROS_INFO("Time remaining until next task: %d minutes.", remaining_time/60);
 
                         if(!robot_charging && !plan_complete)
                         {
