@@ -240,8 +240,9 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
                 reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
                 reachable_points.value.push_back(0);
-                execution_result.success = false;
+                execution_result.success = false;//replan!!!
                 execution_result.last_location = i;
+                as->setSucceeded(execution_result);
                 break;
 
             }
@@ -325,6 +326,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 ac_nav_ptr->waitForResult(ros::Duration(0.0));
                 if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
                     ROS_ERROR("docking failed!");
+
+                as->setSucceeded(execution_result);
             }
         }
 
@@ -334,7 +337,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     movePtu(0.0,0.0);
 
     reach_pub_ptr->publish(reachable_points);
-    as->setSucceeded(execution_result);
+
 
 }
 
