@@ -160,7 +160,15 @@ int main(int argc,char *argv[])
                             if (plans[position] == 1) plan_goal.t = ros::Time::now().sec;
 
                             plan_goal.max_loc = (int) ac_plan.getResult()->locations.poses.size() - (int) ac_execution.getResult()->last_location;
-                            ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc);
+                            if(plan_goal.max_loc - 1 == 0)
+                            {
+                                plan_goal.max_loc = 1;
+                                ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc);
+                            }
+                            else
+                            {
+                                ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc - 1);
+                            }
                             ac_plan.sendGoal(plan_goal);
                             ac_plan.waitForResult();
 
@@ -169,6 +177,7 @@ int main(int argc,char *argv[])
                                 ROS_INFO("Receive plan!");
                                 ROS_INFO("Sending plan to the executioner.");
 
+                                ROS_INFO("Plan sent with %d locations!", (int) ac_plan.getResult()->locations.poses.size());
                                 exec_goal.locations = ac_plan.getResult()->locations;
                                 exec_goal.t = plan_goal.t;
                                 exec_goal.replan = true;

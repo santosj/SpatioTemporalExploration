@@ -141,10 +141,11 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     current_goal.target_pose.header.frame_id = "map";
 
 
+
     //If it is a replan then, the robot will avoid the first point (located in front of the charging station)
     int i = 0;
     if(goal->replan)
-        n = 1;
+        i = 1;
 
     //for each point received the robot will move there and take measurements
     while (i < n)
@@ -242,6 +243,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 reachable_points.value.push_back(0);
                 execution_result.success = false;//replan!!!
                 execution_result.last_location = i;
+                ROS_INFO("Asking for new plan!!!");
                 as->setSucceeded(execution_result);
                 break;
 
