@@ -47,6 +47,14 @@ actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> *ac_plan_pt
 
 ros::Publisher *reach_pub_ptr;
 
+geometry_msgs::Pose current_pose;
+
+void poseCallback(const geometry_msgs::Pose::ConstPtr &msg)
+{
+    current_pose.position.x = msg->position.x;
+    current_pose.position.y = msg->position.y;
+}
+
 void chargingCallback(const scitos_msgs::BatteryState::ConstPtr &msg)
 {
     if(msg->charging)
@@ -236,6 +244,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 ROS_INFO("Docking.");
                 execution_result.success = true;
                 execution_result.visited_locations = i;
+                execution_result.last.position.x = -1.0;
+                execution_result.last.position.y = 0.0;
                 //Docking
                 current_goal.action_server = "docking";
                 current_goal.target_pose.header.frame_id = "map";
@@ -331,6 +341,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 reachable_points.value.push_back(0);
                 execution_result.success = false;
                 execution_result.visited_locations = i;
+                execution_result.last.position.x = current_pose.position.x;
+                execution_result.last.position.y = current_pose.position.y;
                 ROS_INFO("Asking for new plan!!!");
                 //reach_pub_ptr->publish(reachable_points);
                 //as->setSucceeded(execution_result);
@@ -379,6 +391,7 @@ int main(int argc,char *argv[])
     ptu.velocity.resize(3);
     ptu_pub = n.advertise<sensor_msgs::JointState>("/ptu/cmd", 10);
     ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
+    ros::Subscriber pose_sub = n.subscribe("/robot_pose", 10, poseCallback);
 
     //measure service client
     ros::ServiceClient measure_client = n.serviceClient<spatiotemporalexploration::AddView>("/fremenGrid/depth");

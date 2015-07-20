@@ -103,6 +103,13 @@ int main(int argc,char *argv[])
         int slot_duration = timeStamps[1] - timeStamps[0];
         int end_time = timeStamps[position + 1];
 
+        geometry_msgs::Pose initial_pose, final_pose;
+        initial_pose.position.x = -1.0;
+        initial_pose.position.y = 0.0;
+        final_pose.position.x = -1.0;
+        final_pose.position.y = 0.0;
+
+
         if (plans[position] > 0)
         {
             ROS_INFO("Asking for a plan...");
@@ -113,6 +120,9 @@ int main(int argc,char *argv[])
             plan_goal.max_loc = 6; //number ao local maximas
             if (plans[position] == 2) plan_goal.t = 0;
             if (plans[position] == 1) plan_goal.t = timeStamps[position];
+            plan_goal.first = initial_pose;
+            plan_goal.last = final_pose;
+
             ac_plan.sendGoal(plan_goal);
             ac_plan.waitForResult();//timeout?
 
@@ -142,6 +152,9 @@ int main(int argc,char *argv[])
                     if(ac_execution.getResult()->success)
                     {
                         ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
+                        plan_goal.first = initial_pose;
+                        plan_goal.last = final_pose;
+
                     }
                     else
                     {
@@ -168,10 +181,14 @@ int main(int argc,char *argv[])
                                 plan_goal.max_loc = 2;
                                 ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc);
                             }
-                            else
-                            {
-                                ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc);
-                            }
+
+                            initial_pose.position.x = ac_execution.getResult()->last.position.x;
+                            initial_pose.position.y = ac_execution.getResult()->last.position.y;
+                            final_pose.position.x = -1.0;
+                            final_pose.position.y = 0.0;
+                            plan_goal.first = initial_pose;
+                            plan_goal.last = final_pose;
+
                             ac_plan.sendGoal(plan_goal);
                             ac_plan.waitForResult();
 
@@ -194,17 +211,29 @@ int main(int argc,char *argv[])
                                     {
                                         ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
                                         plan_complete = true;
+                                        initial_pose.position.x = -1.0;
+                                        initial_pose.position.y = 0.0;
+                                        final_pose.position.x = -1.0;
+                                        final_pose.position.y = 0.0;
                                         break;
                                     }
                                     else
                                     {
                                         ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
+                                        initial_pose.position.x = ac_execution.getResult()->last.position.x;
+                                        initial_pose.position.y = ac_execution.getResult()->last.position.y;
+                                        final_pose.position.x = -1.0;
+                                        final_pose.position.y = 0.0;
                                         plan_complete = false;
                                     }
                                 }
                                 else
                                 {
                                     ROS_INFO("Exectuioner server failed!");
+                                    initial_pose.position.x = ac_execution.getResult()->last.position.x;
+                                    initial_pose.position.y = ac_execution.getResult()->last.position.y;
+                                    final_pose.position.x = -1.0;
+                                    final_pose.position.y = 0.0;
                                     plan_complete = false;
                                 }
 
@@ -225,6 +254,10 @@ int main(int argc,char *argv[])
                             goal.target_pose.pose.position.y = 0.0;
                             goal.target_pose.pose.orientation.w = 1.0;
                             ac_nav.sendGoal(goal);
+                            initial_pose.position.x = -1.0;
+                            initial_pose.position.y = 0.0;
+                            final_pose.position.x = -1.0;
+                            final_pose.position.y = 0.0;
 
 
                             if(ac_nav.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
