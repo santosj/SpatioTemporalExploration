@@ -7,6 +7,8 @@ bool replan
 float32 information
 bool success
 int64 visited_locations
+geometry_msgs/Pose first 
+geometry_msgs/Pose last
 ---
 # Define a feedback message
 string current_goal
