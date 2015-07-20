@@ -5,10 +5,8 @@ CTSP::CTSP(float ix[],float iy[],int leni)
 	len = leni;
 	x = (float*)malloc((len+1)*sizeof(float));
 	y = (float*)malloc((len+1)*sizeof(float));
-	memcpy(x,ix,len*sizeof(float));
-	memcpy(y,iy,len*sizeof(float));
-	x[len] = x[0];
-	y[len] = y[0];
+	memcpy(x,ix,(len+1)*sizeof(float));
+	memcpy(y,iy,(len+1)*sizeof(float));
 	debug = false;
 }
 
@@ -135,10 +133,12 @@ void CTSP::interswap()
 
 void CTSP::solve(int iter)
 {
-	for (int i = 0;i<iter;i++)
-	{
-		randomswap();
-		interswap();
+	if (len > 2){
+		for (int i = 0;i<iter;i++)
+		{
+			randomswap();
+			interswap();
+		}
 	}
 }
 
