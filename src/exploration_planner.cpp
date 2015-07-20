@@ -255,7 +255,6 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 {
 
     ROS_INFO("Generating goals for timestamp %d", (int)goal->t);
-    as->acceptNewGoal();
 
     spatiotemporalexploration::PlanResult result;
 
@@ -397,6 +396,15 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             mask[y][x] = fmax(fmin(d,1.0),0.0);
         }
     }
+
+    /*** Initial and Final Points ***/
+//    goal->first.position.x
+//    goal->first.position.y
+//    goal->last.position.x
+//    goal->last.position.y
+
+
+
 
     /*** Get maximas ***/
     ROS_INFO("Getting local maximas...");
