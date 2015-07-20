@@ -101,6 +101,7 @@ int main(int argc,char *argv[])
         sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
 
         int slot_duration = timeStamps[1] - timeStamps[0];
+        int end_time = timeStamps[position + 1];
 
         if (plans[position] > 0)
         {
@@ -146,7 +147,7 @@ int main(int argc,char *argv[])
                     {
                         ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
 
-                        int remaining_time = slot_duration - (timeStamps[position + 1] - ros::Time::now().sec);// TODO
+                        int remaining_time = slot_duration - (end_time - ros::Time::now().sec);// TODO
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);
 
                         bool plan_complete = ac_execution.getResult()->success;
@@ -209,7 +210,7 @@ int main(int argc,char *argv[])
 
                             }
 
-                            remaining_time = slot_duration - (timeStamps[position + 1] - ros::Time::now().sec);
+                            remaining_time = slot_duration - (end_time - ros::Time::now().sec);
                         }
 
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);

@@ -227,9 +227,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 /*** REACHABILITY GRID UPDATE (SUCCESS) ***/
                 reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
                 reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-                reachable_points.value.push_back(0);
+                reachable_points.value.push_back(1);
             }
-            else if(n == n-1)//Last point(charging station)
+
+            if(n == i  + 1)//Last point(charging station)
             {
                 ROS_INFO("Plan executed with sucess!");
                 ROS_INFO("Docking.");
@@ -263,7 +264,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             /*** takes measurements in the current location even if it fails ***/
             if(i > 0 && i < n-1)//no measurements should be taken in front of the charging station (first and last point in the plan)
             {
-                ROS_INFO("Taking measurements.");
+                ROS_INFO("Taking measurements in current location.");
 
                 point = 0;
 
@@ -318,7 +319,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             /*** REACHABILITY GRID UPDATE (FAILURE) ***/
             reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
             reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-            reachable_points.value.push_back(1);
+            reachable_points.value.push_back(0);
 
 
             /*** REPLAN ***/
