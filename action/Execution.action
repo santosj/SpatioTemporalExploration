@@ -6,7 +6,7 @@ bool replan
 # Define the result
 float32 information
 bool success
-int64 last_location
+int64 visited_locations
 ---
 # Define a feedback message
 string current_goal
