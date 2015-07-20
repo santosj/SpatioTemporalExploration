@@ -448,8 +448,12 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
             }
         }
     }
-    ix[0] = -1.0;
+    /* position of the robot */
+    ix[0] = -1.0; 
     iy[0] =  0.0;
+    /* position of the charging station */
+    //ix[goal->max_loc] = -1.0; 
+    //iy[goal->max_loc] =  0.0;
 
     /*** Path planning ***/
     ROS_INFO("Planning the path (%d locations)...", goal->max_loc);
