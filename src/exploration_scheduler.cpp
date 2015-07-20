@@ -208,7 +208,10 @@ int main(int argc,char *argv[])
                                 }
 
                             }
+
+                            remaining_time = slot_duration - (timeStamps[position + 1] - ros::Time::now().sec);
                         }
+
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);
 
                         if(!robot_charging && !plan_complete)

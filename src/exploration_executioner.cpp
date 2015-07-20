@@ -155,14 +155,14 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     {
         retries = 0;//number of recovery attempts
         char cr_goal[10];
-        sprintf(cr_goal, "%d/%d", i, n);
+        sprintf(cr_goal, "%d/%d", i+1, n);
         feedback.current_goal = cr_goal;
         feedback.time_remaining = 0;//TODO
         as->publishFeedback(feedback);
 
         //Move to location i:
         current_goal.target_pose.pose = goal->locations.poses[i];
-        ROS_INFO("Moving to location %d of %d -> (%f, %f).",  i, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
+        ROS_INFO("Moving to location %d of %d -> (%f, %f).",  i+1, n, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
         ac_nav_ptr->sendGoal(current_goal);//sends move base goal
 
         //wait for success
@@ -243,14 +243,14 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
                     ROS_ERROR("docking failed!");
 
-                reach_pub_ptr->publish(reachable_points);
-                as->setSucceeded(execution_result);
+                //reach_pub_ptr->publish(reachable_points);
+                //as->setSucceeded(execution_result);
             }
 
         }
         else/** MOVE BASE FAILURE ***/
         {
-            ROS_WARN("Failed to move to location %d: (%f, %f)!", i, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
+            ROS_WARN("Failed to move to location %d: (%f, %f)!", i+1, exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
 
             do
             {
@@ -313,11 +313,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     }
                     ros::spinOnce();
                 }
-
-                /*** REACHABILITY GRID UPDATE (SUCCESS) ***/
-                reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
-                reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-                reachable_points.value.push_back(0);
             }
 
             /*** REACHABILITY GRID UPDATE (FAILURE) ***/
@@ -333,11 +328,11 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
                 reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
                 reachable_points.value.push_back(0);
-                execution_result.success = false;//replan!!!
+                execution_result.success = false;
                 execution_result.visited_locations = i;
                 ROS_INFO("Asking for new plan!!!");
-                reach_pub_ptr->publish(reachable_points);
-                as->setSucceeded(execution_result);
+                //reach_pub_ptr->publish(reachable_points);
+                //as->setSucceeded(execution_result);
                 break;
             }
         }
