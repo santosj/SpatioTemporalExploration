@@ -60,10 +60,15 @@ int main(int argc,char *argv[])
 		{
 			if (plan[i] == 1){
 				plan_goal.max_loc = 10;
+				plan_goal.first.position.x = -1;
+				plan_goal.first.position.y = +0;
+				plan_goal.last.position.x =  -1;
+				plan_goal.last.position.y =  +0;
 				plan_goal.t = timeSlots[i];
 				ac_plan.sendGoal(plan_goal);
 				ac_plan.waitForResult();
 
+				
 				if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
 				{
 					printf("%i %.f\n",timeSlots[i],ac_plan.getResult()->information);
