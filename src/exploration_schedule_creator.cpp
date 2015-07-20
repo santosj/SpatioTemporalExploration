@@ -27,7 +27,7 @@ int main(int argc,char *argv[])
 	ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
 
 	PlanClient ac_plan("planner", true);
-	ac_plan.waitForServer();
+    ac_plan.waitForServer();
 
 	spatiotemporalexploration::PlanGoal plan_goal;
 	spatiotemporalexploration::ExecutionGoal exec_goal;
