@@ -154,6 +154,7 @@ int main(int argc,char *argv[])
                         while(remaining_time > 180 && !plan_complete && ros::ok())//5 min (dynamic reconfigure)
                         {
 
+                            ROS_INFO("Time remaining until next task: %d.", remaining_time);
                             ROS_INFO("Still have time!");
 
                             if (plans[position] == 2) plan_goal.t = 0;

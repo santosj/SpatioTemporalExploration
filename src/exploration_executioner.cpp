@@ -146,8 +146,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         i = 1;
 
     //PTU initial position
-    point = 0;
-    movePtu(pan[point],tilt[point]);
+    movePtu(0.0,0.0);
 
     sleep(0.5);
 
@@ -347,8 +346,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     }
 
     //PTU initial position
-    point = 0;
-    movePtu(pan[point],tilt[point]);
+    movePtu(0.0,0.0);
+
+    reach_pub_ptr->publish(reachable_points);
+    as->setSucceeded(execution_result);
 
 
 }
