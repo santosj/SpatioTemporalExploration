@@ -160,12 +160,14 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             else
                 reachability_grid_ptr[ind] = 1.0;
 
+            ROS_INFO("Point (%f,%f) -> IND: %d -> Value: %f", xp, yp, ind, reachability_grid_ptr[ind]);
+
             //Reachability Markers:
             reachable_point.pose.position.x = xp;
             reachable_point.pose.position.y = yp;
             reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
             reachable_point.color.g = reachability_grid_ptr[ind];
-            reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
+            reachable_point.scale.z = 0.02;// + reachability_grid_ptr[ind];
             reachable_point.pose.position.z = reachable_point.scale.z/2;
             reachable_point.id = ind++;
             reachability_markers.markers.push_back(reachable_point);

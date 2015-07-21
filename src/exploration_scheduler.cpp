@@ -165,7 +165,7 @@ int main(int argc,char *argv[])
                     {
                         ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
 
-                        remaining_time = slot_duration - (init_time - ros::Time::now().sec);
+                        remaining_time = slot_duration - (init_time + ros::Time::now().sec);
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);
 
                         bool plan_complete = ac_execution.getResult()->success;
@@ -244,7 +244,7 @@ int main(int argc,char *argv[])
 
                             }
 
-                            remaining_time = slot_duration - (init_time - ros::Time::now().sec);
+                            remaining_time = slot_duration - (init_time + ros::Time::now().sec);
                         }
 
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);
