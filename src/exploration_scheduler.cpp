@@ -119,7 +119,7 @@ int main(int argc,char *argv[])
             //generate the times for the entire day
             init_time = timeStamps[position];
 
-            remaining_time = slot_duration - (init_time - ros::Time::now().sec);
+            remaining_time = slot_duration - (ros::Time::now().sec - init_time);
 
             //asks for a plan
             plan_goal.max_loc = 6; //number ao local maximas
@@ -244,7 +244,7 @@ int main(int argc,char *argv[])
 
                             }
 
-                            remaining_time = slot_duration - (init_time + ros::Time::now().sec);
+                            remaining_time = slot_duration - (ros::Time::now().sec - init_time);
                         }
 
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);

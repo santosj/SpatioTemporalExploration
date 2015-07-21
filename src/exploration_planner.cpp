@@ -167,7 +167,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             reachable_point.pose.position.y = yp;
             reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
             reachable_point.color.g = reachability_grid_ptr[ind];
-            reachable_point.scale.z = 0.02;// + reachability_grid_ptr[ind];
+            reachable_point.scale.z = 0.5;// + reachability_grid_ptr[ind];
             reachable_point.pose.position.z = reachable_point.scale.z/2;
             reachable_point.id = ind++;
             reachability_markers.markers.push_back(reachable_point);
@@ -369,7 +369,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 reachable_point.pose.position.y = test_point.pose.position.y;
                 reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
                 reachable_point.color.g = reachability_grid_ptr[ind];
-                reachable_point.scale.z = 0.01 + reachability_grid_ptr[ind];
+                reachable_point.scale.z = 0.5;// + reachability_grid_ptr[ind];
                 reachable_point.pose.position.z = test_point.scale.z/2;
 
                 points_markers.markers.push_back(test_point);
