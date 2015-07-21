@@ -75,6 +75,10 @@ int main(int argc,char *argv[])
     spatiotemporalexploration::PlanGoal plan_goal;
     spatiotemporalexploration::ExecutionGoal exec_goal;
 
+    int remaining_time;
+    int end_time;
+    int slot_duration = timeStamps[1] - timeStamps[0];
+
     do
     {
         int position = 0;
@@ -100,8 +104,6 @@ int main(int argc,char *argv[])
         strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
         sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
 
-        int slot_duration = timeStamps[1] - timeStamps[0];
-        int end_time = timeStamps[position + 1];
 
         geometry_msgs::Pose initial_pose, final_pose;
         initial_pose.position.x = -1.0;
@@ -115,6 +117,9 @@ int main(int argc,char *argv[])
             ROS_INFO("Asking for a plan...");
 
             //generate the times for the entire day
+            end_time = timeStamps[position + 1];
+
+            remaining_time = end_time - ros::Time::now().sec;
 
             //asks for a plan
             plan_goal.max_loc = 6; //number ao local maximas
@@ -160,7 +165,7 @@ int main(int argc,char *argv[])
                     {
                         ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
 
-                        int remaining_time = slot_duration - (end_time - ros::Time::now().sec);// TODO
+                        remaining_time = end_time - ros::Time::now().sec;
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);
 
                         bool plan_complete = ac_execution.getResult()->success;
@@ -239,7 +244,7 @@ int main(int argc,char *argv[])
 
                             }
 
-                            remaining_time = slot_duration - (end_time - ros::Time::now().sec);
+                            remaining_time = end_time - ros::Time::now().sec;
                         }
 
                         ROS_INFO("Time remaining until next task: %d.", remaining_time);
