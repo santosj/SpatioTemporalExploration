@@ -58,7 +58,7 @@ int main(int argc,char *argv[])
 
     ros::NodeHandle nh("~");
 
-    ROS_INFO("starting scheduler...");
+    ROS_INFO("Starting scheduler...");
     ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
 
     ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
@@ -83,6 +83,7 @@ int main(int argc,char *argv[])
     {
         int position = 0;
         ros::Time currentTime = ros::Time::now();
+
         if (runOnce == false)
         {
             while (timeStamps[position] < currentTime.sec && position < len) position++;
@@ -105,7 +106,7 @@ int main(int argc,char *argv[])
         sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
 
 
-        geometry_msgs::Pose initial_pose, final_pose;
+        geometry_msgs::Pose initial_pose, final_pose;//in order to improve the replan
         initial_pose.position.x = -1.0;
         initial_pose.position.y = 0.0;
         final_pose.position.x = -1.0;
@@ -114,12 +115,11 @@ int main(int argc,char *argv[])
 
         if (plans[position] > 0)
         {
-            ROS_INFO("Asking for a plan...");
+            ROS_INFO("Asking for a plan.");
 
             //generate the times for the entire day
             init_time = timeStamps[position];
 
-            remaining_time = slot_duration - (ros::Time::now().sec - init_time);
 
             //asks for a plan
             plan_goal.max_loc = 6; //number ao local maximas
@@ -129,12 +129,16 @@ int main(int argc,char *argv[])
             plan_goal.last = final_pose;
 
             ac_plan.sendGoal(plan_goal);
-            ac_plan.waitForResult();//timeout?
+            ac_plan.waitForResult();
 
             if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
             {
                 ROS_INFO("Received a plan with possible information gain of %f",ac_plan.getResult()->information);
                 ROS_INFO("Sending plan to be executed!");
+
+                remaining_time = slot_duration - (ros::Time::now().sec - init_time);
+                ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
+                ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
 
                 //executes plan
                 exec_goal.locations = ac_plan.getResult()->locations;
@@ -148,6 +152,7 @@ int main(int argc,char *argv[])
                 saveInfo.request.order = 0;
                 saveInfo.request.lossy = false;
                 if(saveGridService.call(saveInfo) > 0) ROS_INFO("Grid save successful");
+
 
                 if (ac_execution.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
                 {
@@ -165,16 +170,18 @@ int main(int argc,char *argv[])
                     {
                         ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
 
-                        remaining_time = slot_duration - (init_time + ros::Time::now().sec);
-                        ROS_INFO("Time remaining until next task: %d.", remaining_time);
+                        remaining_time = slot_duration - (ros::Time::now().sec - init_time);
+                        ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
+                        ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
 
                         bool plan_complete = ac_execution.getResult()->success;
 
                         while(remaining_time > 180 && !plan_complete && ros::ok())//5 min (dynamic reconfigure)
                         {
 
-                            ROS_INFO("Time remaining until next task: %d.", remaining_time);
-                            ROS_INFO("Still have time!");
+                            remaining_time = slot_duration - (ros::Time::now().sec - init_time);
+                            ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
+                            ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
 
                             if (plans[position] == 2) plan_goal.t = 0;
                             if (plans[position] == 1) plan_goal.t = ros::Time::now().sec;
@@ -245,9 +252,13 @@ int main(int argc,char *argv[])
                             }
 
                             remaining_time = slot_duration - (ros::Time::now().sec - init_time);
+                            ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
+                            ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
                         }
 
-                        ROS_INFO("Time remaining until next task: %d.", remaining_time);
+                        remaining_time = slot_duration - (ros::Time::now().sec - init_time);
+                        ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
+                        ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
 
                         if(!robot_charging && !plan_complete)
                         {
