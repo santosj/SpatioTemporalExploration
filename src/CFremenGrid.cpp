@@ -464,6 +464,23 @@ void CFremenGrid::save(const char* filename,bool lossy,int forceOrder)
 	fclose(f);
 }
 
+void CFremenGrid::saveSmart(const char* filename,bool lossy,int forceOrder)
+{
+	FILE* f=fopen(filename,"w");
+	fwrite(&xDim,sizeof(int),1,f);
+	fwrite(&yDim,sizeof(int),1,f);
+	fwrite(&zDim,sizeof(int),1,f);
+	fwrite(&oX,sizeof(float),1,f);
+	fwrite(&oY,sizeof(float),1,f);
+	fwrite(&oZ,sizeof(float),1,f);
+	fwrite(&resolution,sizeof(float),1,f);
+	fwrite(&obtainedInformation,sizeof(float),1,f);
+	fwrite(probs,sizeof(float),numCells,f);
+	for (int i=0;i<numCells;i++) frelements[i].saveSmart(f,false);
+	fclose(f);
+}
+
+
 bool CFremenGrid::load(const char* filename)
 {
 	int ret = 0;
@@ -606,6 +623,17 @@ float CFremenGrid::estimate(unsigned int index,uint32_t timeStamp)
 float CFremenGrid::retrieve(unsigned int index)
 {
 	return probs[index];
+}
+
+
+int CFremenGrid::numStatic(float tolerance)
+{
+	int number = 0;
+	for (int i =0;i<numCells;i++)
+	{
+		if (frelements[i].gain <= tolerance || frelements[i].gain >= 1-tolerance || frelements[i].measurements == 0) number++;
+	}
+	return number;
 }
 
 

@@ -38,8 +38,10 @@ class CFremenGrid
 		/*changes the model order*/
 		void print(bool verbose);
 		void save(const char*name,bool lossy = false,int forceOrder = -1);
+		void saveSmart(const char*name,bool lossy = false,int forceOrder = -1);
 		bool load(const char*name);
 		bool loadHeader(const char*name);
+		int numStatic(float tolerance = 0);
 
 		float estimate(unsigned int index,uint32_t timeStamp);
 		float retrieve(unsigned int index);

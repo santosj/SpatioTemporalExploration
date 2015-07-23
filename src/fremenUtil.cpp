@@ -113,14 +113,23 @@ bool projectGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotempo
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
     grid->load(req.filename.c_str());
-    ROS_INFO("3D Grid of %ix%ix%i loaded with %i/%i static cells!",grid->xDim,grid->yDim,grid->zDim,grid->numStatic(),grid->numCells);
+    char smart[1000];
+    sprintf(smart,"%s.smart",req.filename.c_str());
+    grid->saveSmart(smart);
+    sprintf(smart,"%s.stupid",req.filename.c_str());
+    grid->save(smart);
+    ROS_INFO("3D Grid of %ix%ix%i loaded with %i/%i %.3f static cells!",grid->xDim,grid->yDim,grid->zDim,grid->numStatic(),grid->numCells,(float)grid->numStatic()/grid->numCells);
+    for (float i = 0;i<0.5;i+=0.01){
+	    int a = grid->numStatic(i);
+	    printf("%.3f %i/%i %.3f\n",i,a,grid->numCells,(float)a/grid->numCells);
+    }
     res.result = true;
     return true;
 }
 
 bool saveGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
-    grid->saveSmart(req.filename.c_str(), (bool) req.lossy,req.order);
+    grid->save(req.filename.c_str(), (bool) req.lossy,req.order);
     ROS_INFO("3D Grid of %ix%ix%i saved !",grid->xDim,grid->yDim,grid->zDim);
     return true;
 }
@@ -202,7 +211,6 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 bool estimateEntropy(spatiotemporalexploration::Entropy::Request  &req, spatiotemporalexploration::Entropy::Response &res)
 {
 	grid->recalculate(req.t);
-	//ROS_INFO("Entropy estimate called %.3f %.3f \n",req.x,req.y);
 	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
 	res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,5.0);
 	return true;
@@ -359,17 +367,17 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 int main(int argc,char *argv[])
 {
-    ros::init(argc, argv, "fremengrid");
+    ros::init(argc, argv, "fremenutil");
     ros::NodeHandle n;
     grid = new CFremenGrid(MIN_X,MIN_Y,MIN_Z,DIM_X,DIM_Y,DIM_Z,RESOLUTION);
 
-    n.setParam("/fremenGrid/minX",MIN_X);
-    n.setParam("/fremenGrid/minY",MIN_Y);
-    n.setParam("/fremenGrid/minZ",MIN_Z);
-    n.setParam("/fremenGrid/dimX",DIM_X);
-    n.setParam("/fremenGrid/dimY",DIM_Y);
-    n.setParam("/fremenGrid/dimZ",DIM_Z);
-    n.setParam("/fremenGrid/resolution",RESOLUTION);
+    n.setParam("/fremenUtil/minX",MIN_X);
+    n.setParam("/fremenUtil/minY",MIN_Y);
+    n.setParam("/fremenUtil/minZ",MIN_Z);
+    n.setParam("/fremenUtil/dimX",DIM_X);
+    n.setParam("/fremenUtil/dimY",DIM_Y);
+    n.setParam("/fremenUtil/dimZ",DIM_Z);
+    n.setParam("/fremenUtil/resolution",RESOLUTION);
 
     tf_listener    = new tf::TransformListener();
     image_transport::ImageTransport imageTransporter(n); 
@@ -381,16 +389,16 @@ int main(int argc,char *argv[])
     //Subscribers:
     ros::Subscriber point_subscriber = n.subscribe<sensor_msgs::PointCloud2> ("/head_xtion/depth/points",  1000, points);
     image_transport::Subscriber image_subscriber = imageTransporter.subscribe("/head_xtion/depth/image_raw", 1, imageCallback);
-    retrieve_publisher = n.advertise<visualization_msgs::Marker>("/fremenGrid/visCells", 100);
-    information_publisher  = n.advertise<std_msgs::Float32>("/fremenGrid/obtainedInformation", 100);
+    retrieve_publisher = n.advertise<visualization_msgs::Marker>("/fremenUtil/visCells", 100);
+    information_publisher  = n.advertise<std_msgs::Float32>("/fremenUtil/obtainedInformation", 100);
 
     //Services:
-    ros::ServiceServer retrieve_service = n.advertiseService("/fremenGrid/visualize", visualizeGrid);
-    ros::ServiceServer information_gain = n.advertiseService("/fremenGrid/entropy", estimateEntropy);
-//    ros::ServiceServer add_service = n.advertiseService("/fremenGrid/measure", addView);
-    ros::ServiceServer depth_service = n.advertiseService("/fremenGrid/depth", addDepth);
-    ros::ServiceServer save_service = n.advertiseService("/fremenGrid/save", saveGrid);
-    ros::ServiceServer load_service = n.advertiseService("/fremenGrid/load", loadGrid);
+    ros::ServiceServer retrieve_service = n.advertiseService("/fremenUtil/visualize", visualizeGrid);
+    ros::ServiceServer information_gain = n.advertiseService("/fremenUtil/entropy", estimateEntropy);
+//    ros::ServiceServer add_service = n.advertiseService("/fremenUtil/measure", addView);
+    ros::ServiceServer depth_service = n.advertiseService("/fremenUtil/depth", addDepth);
+    ros::ServiceServer save_service = n.advertiseService("/fremenUtil/save", saveGrid);
+    ros::ServiceServer load_service = n.advertiseService("/fremenUtil/load", loadGrid);
 
     ros::spin();
     delete tf_listener;

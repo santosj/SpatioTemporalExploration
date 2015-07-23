@@ -176,7 +176,7 @@ void CFrelement::update()
 	{
 		re = allFrelements[i].realStates-allFrelements[i].realBalance;
 		im = allFrelements[i].imagStates-allFrelements[i].imagBalance;
-		if (1.5*0*tmp[i].period <= duration && tmp[i].period>3600) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0;
+		if (1.5*0*tmp[i].period <= duration && tmp[i].period>3600) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0; 	//TODO zero!
 		if (tmp[i].amplitude < FREMEN_AMPLITUDE_THRESHOLD) tmp[i].amplitude = 0;
 		//frelements[i].amplitude = sqrt(re*re+im*im)/measurements;
 		tmp[i].phase = atan2(im,re);
@@ -208,6 +208,7 @@ void CFrelement::print(bool verbose)
 	}
 	std::cout << endl; 
 }
+
 
 float CFrelement::estimate(uint32_t time,int orderi)
 {
@@ -262,6 +263,13 @@ int CFrelement::save(char* name,bool lossy)
 	fclose(file);
 }
 
+int CFrelement::saveSmart(char* name,bool lossy)
+{
+	FILE* file = fopen(name,"w");
+	save(file);
+	fclose(file);
+}
+
 int CFrelement::load(char* name)
 {
 	FILE* file = fopen(name,"r");
@@ -283,6 +291,19 @@ int CFrelement::save(FILE* file,bool lossy)
 	return 0;
 }
 
+int CFrelement::saveSmart(FILE* file,bool lossy)
+{
+	int frk = NUM_PERIODICITIES;
+	if (measurements == 0 || gain == 0) frk = 0;
+	fwrite(&frk,sizeof(uint32_t),1,file);
+	fwrite(&gain,sizeof(float),1,file);
+	fwrite(&measurements,sizeof(int),1,file);
+	fwrite(&firstTime,sizeof(uint32_t),1,file);
+	fwrite(&lastTime,sizeof(uint32_t),1,file);
+	if (frk > 0) fwrite(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
+	return 0;
+}
+
 int CFrelement::load(FILE* file)
 {
 	int frk = NUM_PERIODICITIES;
@@ -292,8 +313,10 @@ int CFrelement::load(FILE* file)
 	koko+=fread(&measurements,sizeof(int),1,file);
 	koko+=fread(&firstTime,sizeof(uint32_t),1,file);
 	koko+=fread(&lastTime,sizeof(uint32_t),1,file);
-	koko+=fread(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
+	if (frk == 0){
+		memset(allFrelements,0,sizeof(SFrelementFull)*NUM_PERIODICITIES);
+	}else{ 
+		koko+=fread(allFrelements,sizeof(SFrelementFull),NUM_PERIODICITIES,file);
+	}
 	return 0;
 }
-
-

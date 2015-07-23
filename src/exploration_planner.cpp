@@ -338,7 +338,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 if(entropy_client_ptr->call(entropy_srv) > 0)
                 {
                     //ROS_INFO("obstacle distance: %f", entropy_srv.response.obstacle);
-            //        ROS_INFO("estimated entropy: %f", entropy_srv.response.value);
+            	    //ROS_INFO("estimated entropy: %f", entropy_srv.response.value);
                     if(entropy_srv.response.obstacle > 0.25)
                         reachability_grid_ptr[ind] = 1.0;
                     else

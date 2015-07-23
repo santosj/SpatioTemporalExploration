@@ -38,6 +38,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 
 add_executable(fremengrid src/fremenGrid.cpp)
+add_executable(fremenutil src/fremenUtil.cpp)
 add_executable(frontier_exploration src/frontier_exploration.cpp)
 add_executable(analysegrid src/analyseGrid.cpp)
 add_executable(exploration src/fremenExploration.cpp)
@@ -52,6 +53,7 @@ add_executable(grid_planning src/GridPlanning.cpp)
 add_executable(flat_diff src/flat_diff.cpp)
 
 add_dependencies(fremengrid ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(fremenutil ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(frontier_exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration_executioner ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
@@ -72,8 +74,10 @@ target_link_libraries(frontier_exploration rawimagelib guilib)
 target_link_libraries(frelement fremen_timer)
 target_link_libraries(fremengridlib frelement)
 target_link_libraries(fremengrid fremengridlib)
+target_link_libraries(fremenutil fremengridlib)
 target_link_libraries(analysegrid fremengridlib)
 target_link_libraries(fremengrid ${catkin_LIBRARIES})
+target_link_libraries(fremenutil ${catkin_LIBRARIES})
 target_link_libraries(order ${catkin_LIBRARIES})
 
 

@@ -56,10 +56,14 @@ class CFrelement
 		void update();
 		void print(bool verbose=true);
 
-		int save(FILE* file,bool lossy = false);
-		int load(FILE* file);
-		int save(char* name,bool lossy = false);
 		int load(char* name);
+		int load(FILE* file);
+
+		int save(FILE* file,bool lossy = false);
+		int save(char* name,bool lossy = false);
+
+		int saveSmart(FILE* file,bool lossy = false);
+		int saveSmart(char* name,bool lossy = false);
 		
 		SFrelementFull allFrelements[NUM_PERIODICITIES];
 		SFrelement frelements[MAX_ADAPTIVE_ORDER];
