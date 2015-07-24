@@ -113,8 +113,9 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
     float x = req.x;
     float y = req.y;
 
-    res.gx = ((x - MIN_X)/entropies_step) - 0.5;
-    res.gy = ((y - MIN_Y)/entropies_step) - 0.5;
+    res.gx = (MIN_X - x)/entropies_step + 0.5;
+    //x = ((msg->x[i] - MIN_X)/entropies_step) - 0.5; xp = MIN_X + entropies_step*(i+0.5);
+    res.gy = (MIN_Y - y)/entropies_step + 0.5;
 
     reachable_point.pose.position.x = res.gx;
     reachable_point.pose.position.y = res.gy;
@@ -200,7 +201,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             else
                 reachability_grid_ptr[ind] = 1.0;
 
-            ROS_INFO("Point (%f,%f) -> IND: %d -> Value: %f", xp, yp, ind, reachability_grid_ptr[ind]);
+            //ROS_INFO("Point (%f,%f) -> IND: %d -> Value: %f", xp, yp, ind, reachability_grid_ptr[ind]);
 
             //Reachability Markers:
             reachable_point.pose.position.x = xp;
