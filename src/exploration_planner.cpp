@@ -122,8 +122,8 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
 //    yp = MIN_Y + entropies_step*(j+0.5);
 //    (MIN_X + DIM_X*entropies_step)
 
-    //reachable_point.pose.position.x = res.gx;
-    //reachable_point.pose.position.y = res.gy;
+    reachable_point.pose.position.x = res.gx;
+    reachable_point.pose.position.y = res.gy;
 
     //res.index = DIM_X*res.gy + res.gx;
 
