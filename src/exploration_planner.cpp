@@ -113,14 +113,19 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
     float x = req.x;
     float y = req.y;
 
-    res.gx = (x + MIN_X)/entropies_step;
-    //x = ((msg->x[i] - MIN_X)/entropies_step) - 0.5; xp = MIN_X + entropies_step*(i+0.5);
-    res.gy = (y + MIN_X)/entropies_step;
+//    res.gx = (x - MIN_X)/entropies_step;
+//    res.gy = (y - MIN_X)/entropies_step;
+    res.gx = ((x - MIN_X)/entropies_step) - 0.5;
+    res.gy = ((y - MIN_Y)/entropies_step) - 0.5;
+//    ind = numCellsX*y + x;
+//    xp = MIN_X + entropies_step*(i+0.5);
+//    yp = MIN_Y + entropies_step*(j+0.5);
+//    (MIN_X + DIM_X*entropies_step)
 
-    reachable_point.pose.position.x = res.gx;
-    reachable_point.pose.position.y = res.gy;
+    //reachable_point.pose.position.x = res.gx;
+    //reachable_point.pose.position.y = res.gy;
 
-    res.index = DIM_X*res.gy + res.gx;
+    //res.index = DIM_X*res.gy + res.gx;
 
     debug_pub_ptr->publish(reachable_point);
     ROS_INFO("published debud point!");
