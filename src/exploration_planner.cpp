@@ -115,8 +115,8 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
 
 //    res.gx = (x - MIN_X)/entropies_step;
 //    res.gy = (y - MIN_X)/entropies_step;
-    res.gx = ((MIN_X - x)/entropies_step) - 0.5;
-    res.gy = ((MIN_Y - y)/entropies_step) - 0.5;
+    res.gx = (fabs(x - MIN_X)/entropies_step) - 0.5;
+    res.gy = (fabs(y - MIN_Y)/entropies_step) - 0.5;
 //    ind = numCellsX*y + x;
 //    xp = MIN_X + entropies_step*(i+0.5);
 //    yp = MIN_Y + entropies_step*(j+0.5);
