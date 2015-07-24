@@ -37,6 +37,7 @@ catkin_package(CATKIN_DEPENDS roscpp message_runtime pcl_conversions pcl_ros std
 include_directories(${catkin_INCLUDE_DIRS}) 
 
 
+add_executable(grid2pic src/grid2pic.cpp)
 add_executable(fremengrid src/fremenGrid.cpp)
 add_executable(fremenutil src/fremenUtil.cpp)
 add_executable(frontier_exploration src/frontier_exploration.cpp)
@@ -54,6 +55,7 @@ add_executable(flat_diff src/flat_diff.cpp)
 
 add_dependencies(fremengrid ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(fremenutil ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(grid2pic ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(frontier_exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration_executioner ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
@@ -75,9 +77,11 @@ target_link_libraries(frelement fremen_timer)
 target_link_libraries(fremengridlib frelement)
 target_link_libraries(fremengrid fremengridlib)
 target_link_libraries(fremenutil fremengridlib)
+target_link_libraries(grid2pic fremengridlib)
 target_link_libraries(analysegrid fremengridlib)
 target_link_libraries(fremengrid ${catkin_LIBRARIES})
 target_link_libraries(fremenutil ${catkin_LIBRARIES})
+target_link_libraries(grid2pic ${catkin_LIBRARIES})
 target_link_libraries(order ${catkin_LIBRARIES})
 
 
@@ -95,6 +99,7 @@ target_link_libraries(flat ${catkin_LIBRARIES})
 target_link_libraries(flat_generate_grids ${catkin_LIBRARIES})
 target_link_libraries(flat_diff ${catkin_LIBRARIES})
 target_link_libraries(frontier_exploration ${catkin_LIBRARIES} SDL SDL_ttf)
+target_link_libraries(grid2pic ${catkin_LIBRARIES} SDL SDL_ttf GL)
 
 
 
