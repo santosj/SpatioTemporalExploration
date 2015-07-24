@@ -13,6 +13,7 @@
 #include "spatiotemporalexploration/AddView.h"
 #include "spatiotemporalexploration/Visualize.h"
 #include "spatiotemporalexploration/SaveLoad.h"
+#include "spatiotemporalexploration/EditValue.h"
 #include "nav_msgs/GetPlan.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "order.h"
@@ -52,7 +53,7 @@ tf::TransformListener *tf_listener_ptr;
 
 ros::ServiceClient *entropy_client_ptr;
 
-ros::Publisher *points_pub_ptr, *max_pub_ptr, *reach_pub_ptr;
+ros::Publisher *points_pub_ptr, *max_pub_ptr, *reach_pub_ptr, *debug_pub_ptr;
 
 ros::Subscriber *map_sub_ptr;
 
@@ -83,6 +84,45 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
         ROS_INFO("failed to load grid...");
         res.result = false;
     }
+
+    return true;
+
+}
+
+
+bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotemporalexploration::EditValue::Response &res)
+{
+
+    ROS_INFO("Edit Grid Service.");
+
+    visualization_msgs::Marker reachable_point;
+    reachable_point.header.frame_id = "/map";
+    reachable_point.header.stamp = ros::Time::now();
+    reachable_point.id = 1;
+    reachable_point.ns = "debug";
+    reachable_point.action = visualization_msgs::Marker::ADD;
+    reachable_point.type = visualization_msgs::Marker::SPHERE;
+    reachable_point.color.a = 1.0;
+    reachable_point.color.b = 1.0;
+    reachable_point.pose.position.z = 0.0;
+    reachable_point.pose.orientation.w = 1.0;
+    reachable_point.scale.x = entropies_step;
+    reachable_point.scale.y = entropies_step;
+    reachable_point.scale.z = entropies_step;
+
+    float x = req.x;
+    float y = req.y;
+
+    res.gx = ((x - MIN_X)/entropies_step) - 0.5;
+    res.gy = ((y - MIN_Y)/entropies_step) - 0.5;
+
+    reachable_point.pose.position.x = res.gx;
+    reachable_point.pose.position.y = res.gy;
+
+    res.index = DIM_X*res.gy + res.gx;
+
+    debug_pub_ptr->publish(reachable_point);
+    ROS_INFO("published debud point!");
 
     return true;
 
@@ -167,7 +207,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             reachable_point.pose.position.y = yp;
             reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
             reachable_point.color.g = reachability_grid_ptr[ind];
-            reachable_point.scale.z = 0.5;// + reachability_grid_ptr[ind];
+            reachable_point.scale.z = 0.2;// + reachability_grid_ptr[ind];
             reachable_point.pose.position.z = reachable_point.scale.z/2;
             reachable_point.id = ind++;
             reachability_markers.markers.push_back(reachable_point);
@@ -369,8 +409,8 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 reachable_point.pose.position.y = test_point.pose.position.y;
                 reachable_point.color.r = 1.0 - reachability_grid_ptr[ind];
                 reachable_point.color.g = reachability_grid_ptr[ind];
-                reachable_point.scale.z = 0.5;// + reachability_grid_ptr[ind];
-                reachable_point.pose.position.z = test_point.scale.z/2;
+                reachable_point.scale.z = 0.2;// + reachability_grid_ptr[ind];
+                reachable_point.pose.position.z = reachable_point.scale.z/2;
 
                 points_markers.markers.push_back(test_point);
                 reachability_markers.markers.push_back(reachable_point);
@@ -533,7 +573,8 @@ int main(int argc,char *argv[])
     plan_client_ptr = &plan_client;
     nav_msgs::GetPlan plan;
 
-    ros::ServiceServer vis_service = n.advertiseService("/reachability/load", loadGrid);
+    ros::ServiceServer vis_service = n.advertiseService("/reachabilityGrid/load", loadGrid);
+    ros::ServiceServer edit_service = n.advertiseService("/reachabilityGrid/edit", editGrid);
 
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_grid", 100);
     points_pub_ptr = &points_pub;
@@ -543,6 +584,9 @@ int main(int argc,char *argv[])
 
     ros::Publisher max_pub = n.advertise<visualization_msgs::MarkerArray>("/maximas", 100);
     max_pub_ptr = &max_pub;
+
+    ros::Publisher debug_pub = n.advertise<visualization_msgs::Marker>("/reachabilityGrid/debug", 100);
+    debug_pub_ptr = &debug_pub;
 
     ros::Subscriber rPoints_sub = n.subscribe("/reachable_points", 10, reachableCallback);
 

@@ -12,11 +12,13 @@ add_message_files(
 
 add_service_files(
 		FILES
+		EditValue.srv
 		Entropy.srv
 		SaveLoad.srv
 		AddView.srv
 		Visualize.srv
 		FlatGrid.srv
+		
 )
 
 add_action_files(

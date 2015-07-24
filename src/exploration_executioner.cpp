@@ -47,7 +47,8 @@ actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> *ac_plan_pt
 
 ros::Publisher *reach_pub_ptr;
 
-geometry_msgs::Pose current_pose;
+geometry_msgs::Pose current_pose, previous_pose;
+
 
 void poseCallback(const geometry_msgs::Pose::ConstPtr &msg)
 {
@@ -142,6 +143,9 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             ROS_INFO("Robot undocked... Executing received plan!");
     }
 
+    previous_pose.position.x  = 1.0;
+    previous_pose.position.y = 0.0;
+
     //In order to call move base after undocking:
     current_goal.action_server = "move_base";
     current_goal.target_pose.header.frame_id = "map";
@@ -231,6 +235,9 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     }
                     ros::spinOnce();
                 }
+
+                previous_pose.position.x  = current_goal.target_pose.pose.position.x;
+                previous_pose.position.y = current_goal.target_pose.pose.position.y;
 
                 /*** REACHABILITY GRID UPDATE (SUCCESS) ***/
                 reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
@@ -327,9 +334,36 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             }
 
             /*** REACHABILITY GRID UPDATE (FAILURE) ***/
-            reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
-            reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
-            reachable_points.value.push_back(0);
+            double dist_previous, dist_goal;
+            dist_previous = pow(current_pose.position.x - previous_pose.position.x, 2.0) + pow(current_pose.position.y - previous_pose.position.y, 2.0);
+            dist_goal = pow(current_goal.target_pose.pose.position.x - current_pose.position.x, 2.0) + pow(current_goal.target_pose.pose.position.y - current_pose.position.y, 2.0);
+
+            ROS_INFO("Previous Point: (%f,%f)", previous_pose.position.x, previous_pose.position.y);
+            ROS_INFO("Current Point: (%f,%f)", current_pose.position.x, current_pose.position.y);
+            ROS_INFO("Goal Point: (%f,%f)", current_goal.target_pose.pose.position.x, current_goal.target_pose.pose.position.y);
+
+
+            ROS_INFO("dist to previous: %lf", dist_previous);
+            ROS_INFO("dist to current: %lf", dist_goal);
+
+            if(dist_goal > dist_previous)//failure in the previous point
+            {
+                reachable_points.x.push_back(current_pose.position.x);
+                reachable_points.y.push_back(current_pose.position.y);
+                reachable_points.value.push_back(0);
+            }
+            else
+            {
+                reachable_points.x.push_back(current_goal.target_pose.pose.position.x);
+                reachable_points.y.push_back(current_goal.target_pose.pose.position.y);
+                reachable_points.value.push_back(0);
+            }
+
+            previous_pose.position.x = current_pose.position.x;
+            previous_pose.position.y = current_pose.position.y;
+
+
+
 
 
             /*** REPLAN ***/
