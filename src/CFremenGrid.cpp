@@ -85,7 +85,7 @@ float CFremenGrid::getClosestObstacle(float xp,float yp,float zt,float range)
 			cellIndex = xDim*(y+yDim*z);
             for (int x = xStart;x<=xEnd;x++)
 			{
-				if (probs[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
+                if (predicted[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
 				{
 					minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
 				}
