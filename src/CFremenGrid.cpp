@@ -5,7 +5,8 @@ using namespace std;
 CFremenGrid::CFremenGrid(float originX,float originY,float originZ,int dimX,int dimY,int dimZ,float cellSize)
 {
 	lastTimeStamp = 0;
-	obtainedInformation = 0;
+	obtainedInformationLast = 0;
+	obtainedInformationPredicted = 0;
 	minProb = 0.05;
 	maxProb = 1-minProb;
 	residualEntropy = minProb*log2f(minProb)+(maxProb)*log2f(maxProb);
@@ -341,7 +342,9 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					if (d[i]==1)
 					{
 						dumInf = fmax(fmin(probs[final],maxProb),minProb);
-						obtainedInformation += -(log2f(dumInf)-residualInformation);
+						obtainedInformationLast += -(log2f(dumInf)-residualInformation);
+						dumInf = fmax(fmin(predicted[final],maxProb),minProb);
+						obtainedInformationPredicted += -(log2f(dumInf)-residualInformation);
 						//if (probs[final] < 0.5)setToOne++;
 						frelements[final].add(times,oneVal,1);	
 						probs[final] = maxProb; //else probs[final] = minProb;
@@ -367,7 +370,9 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 				if (d[i]==1)
 				{
 					dumInf = fmax(fmin(probs[final],maxProb),minProb);
-					obtainedInformation += -(log2f(dumInf)-residualInformation);
+					obtainedInformationLast += -(log2f(dumInf)-residualInformation);
+					dumInf = fmax(fmin(predicted[final],maxProb),minProb);
+					obtainedInformationPredicted += -(log2f(dumInf)-residualInformation);
 				       	frelements[final].add(times,oneVal,1);	
 					//if (probs[final] < 0.5) setToOne++;
 					probs[final] = maxProb;//(maxProb+probs[final]*3)/4; //else probs[final] = minProb;
@@ -448,7 +453,9 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 				if (aux[index] == 0){
 					aux[index] = 1;
 					dumInf = fmax(fmin(probs[index],maxProb),minProb);
-					obtainedInformation += -(log2f(1-dumInf)-residualInformation);
+					obtainedInformationLast += -(log2f(1-dumInf)-residualInformation);
+					dumInf = fmax(fmin(predicted[index],maxProb),minProb);
+					obtainedInformationPredicted += -(log2f(1-dumInf)-residualInformation);
 					if (probs[index] > 0.5) setToZero++;
 					probs[index] = minProb;//(minProb+probs[index]*3)/4;
 				       	frelements[index].add(times,zeroVal,1);	
@@ -473,7 +480,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 	}
 	printf("Cells: set to 0: %i. Set to 1: %i.\n",setToZero,setToOne);
 	//printf("preparation %i ms and update of %i cells took %i ms.\n",prepare,cells,calculate);
-	return obtainedInformation;
+	return obtainedInformationLast;
 } 
 
 void CFremenGrid::save(const char* filename,bool lossy,int forceOrder)
@@ -486,7 +493,8 @@ void CFremenGrid::save(const char* filename,bool lossy,int forceOrder)
 	fwrite(&oY,sizeof(float),1,f);
 	fwrite(&oZ,sizeof(float),1,f);
 	fwrite(&resolution,sizeof(float),1,f);
-	fwrite(&obtainedInformation,sizeof(float),1,f);
+	fwrite(&obtainedInformationLast,sizeof(float),1,f);
+	fwrite(&obtainedInformationPredicted,sizeof(float),1,f);
 	fwrite(probs,sizeof(float),numCells,f);
 	for (int i=0;i<numCells;i++) frelements[i].save(f,false);
 	fclose(f);
@@ -502,7 +510,8 @@ void CFremenGrid::saveSmart(const char* filename,bool lossy,int forceOrder)
 	fwrite(&oY,sizeof(float),1,f);
 	fwrite(&oZ,sizeof(float),1,f);
 	fwrite(&resolution,sizeof(float),1,f);
-	fwrite(&obtainedInformation,sizeof(float),1,f);
+	fwrite(&obtainedInformationLast,sizeof(float),1,f);
+	fwrite(&obtainedInformationPredicted,sizeof(float),1,f);
 	fwrite(probs,sizeof(float),numCells,f);
 	for (int i=0;i<numCells;i++) frelements[i].saveSmart(f,false);
 	fclose(f);
@@ -529,7 +538,8 @@ bool CFremenGrid::load(const char* filename)
 	ret = fread(&oY,sizeof(float),1,f);
 	ret = fread(&oZ,sizeof(float),1,f);
 	ret = fread(&resolution,sizeof(float),1,f);
-	ret = fread(&obtainedInformation,sizeof(float),1,f);
+	ret = fread(&obtainedInformationLast,sizeof(float),1,f);
+	ret = fread(&obtainedInformationPredicted,sizeof(float),1,f);
 	numCells = xDim*yDim*zDim;
 	ret = fread(probs,sizeof(float),numCells,f);
 	for (int i=0;i<numCells;i++) frelements[i].load(f);
@@ -539,7 +549,7 @@ bool CFremenGrid::load(const char* filename)
 		cellArray[i]->load(f);
 		cellArray[i]->signalLength = signalLength;
 	}*/
-	printf("FrOctomap with %i: %ix%ix%i cells and %.0f information.\n",numCells,xDim,yDim,zDim,obtainedInformation);
+	printf("FrOctomap with %i: %ix%ix%i cells and %.0f/%.0f information.\n",numCells,xDim,yDim,zDim,obtainedInformationLast,obtainedInformationPredicted);
 	fclose(f);
 	update();
 	buildLimits(probs);
@@ -562,7 +572,8 @@ bool CFremenGrid::loadHeader(const char* filename)
 	ret = fread(&oY,sizeof(float),1,f);
 	ret = fread(&oZ,sizeof(float),1,f);
 	ret = fread(&resolution,sizeof(float),1,f);
-	ret = fread(&obtainedInformation,sizeof(float),1,f);
+	ret = fread(&obtainedInformationLast,sizeof(float),1,f);
+	ret = fread(&obtainedInformationPredicted,sizeof(float),1,f);
 	numCells = xDim*yDim*zDim;
 	fclose(f);
 	return true;
@@ -638,10 +649,16 @@ void CFremenGrid::update()
 	for (int i =0;i<numCells;i++) frelements[i].update();
 }
 
-float CFremenGrid::getObtainedInformation()
+float CFremenGrid::getObtainedInformationLast()
 {
-	return obtainedInformation;
+	return obtainedInformationLast;
 }
+
+float CFremenGrid::getObtainedInformationPredicted()
+{
+	return obtainedInformationPredicted;
+}
+
 
 float CFremenGrid::estimate(unsigned int index,uint32_t timeStamp)
 {

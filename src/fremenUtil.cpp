@@ -193,7 +193,7 @@ bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalex
 	std_msgs::Float32 info;
 	integrateMeasurements = 2;
 	res.result = true;
-	info.data = res.information = grid->getObtainedInformation();
+	info.data = res.information = grid->getObtainedInformationLast();
 	information_publisher.publish(info);
 	return true;
 }
@@ -203,7 +203,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 	std_msgs::Float32 info;
 	integrateMeasurements = 3;
 	res.result = true;
-	info.data = res.information = grid->getObtainedInformation();
+	info.data = res.information = grid->getObtainedInformationLast();
 	information_publisher.publish(info);
 	return true;
 }

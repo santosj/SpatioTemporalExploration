@@ -17,7 +17,7 @@ int main(int argc,char *argv[])
 {
     grid = new CFremenGrid(MIN_X,MIN_Y,MIN_Z,DIM_X,DIM_Y,DIM_Z,RESOLUTION);
     grid->loadHeader(argv[1]);
-    printf("3D Grid of %ix%ix%i loaded - %f information.\n",grid->xDim,grid->yDim,grid->zDim,grid->getObtainedInformation());
+    printf("3D Grid of %ix%ix%i loaded - %.0f %.0f information.\n",grid->xDim,grid->yDim,grid->zDim,grid->getObtainedInformationLast(),grid->getObtainedInformationPredicted());
     delete grid;
     return 0;
 }

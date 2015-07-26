@@ -186,7 +186,7 @@ bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalex
 	std_msgs::Float32 info;
 	integrateMeasurements = 2;
 	res.result = true;
-	info.data = res.information = grid->getObtainedInformation();
+	info.data = res.information = grid->getObtainedInformationLast();
 	information_publisher.publish(info);
 	return true;
 }
@@ -196,7 +196,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 	std_msgs::Float32 info;
 	integrateMeasurements = 3;
 	res.result = true;
-	info.data = res.information = grid->getObtainedInformation();
+	info.data = res.information = grid->getObtainedInformationLast();
 	information_publisher.publish(info);
 	return true;
 }
@@ -310,10 +310,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 		 integrateMeasurements--;
 	}*/
 	int len =  msg->height*msg->width;
-	float vx = 1/570.0; 
+	/*float vx = 1/570.0; 
 	float vy = 1/570.0; 
 	float cx = -320.5;
-	float cy = -240.5;
+	float cy = -240.5;*/
+	float vx = 1/570.34; 
+	float vy = 1/570.34; 
+	float cx = -314.5;
+	float cy = -235.5;
 	int width = msg->width;
 	int height = msg->height;
 	float fx = (1+cx)*vx;
@@ -370,12 +374,12 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 				cnt++;	
 			}
 		}
-		int lastInfo = grid->obtainedInformation;	
+		int lastInfo = grid->obtainedInformationLast;
 		printf("Depth image to point cloud took %i ms,",timer.getTime());
 		grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
 		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
 		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformation-lastInfo);	
+		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformationLast-lastInfo);	
 		//printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
 	}
 }

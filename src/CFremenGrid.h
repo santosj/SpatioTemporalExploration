@@ -29,7 +29,8 @@ class CFremenGrid
 		/*repopulates the set P - use to recover after map load*/
 		void update();
 
-		float getObtainedInformation();
+		float getObtainedInformationLast();
+		float getObtainedInformationPredicted();
 
 		float estimate(float x,float y,float z,uint32_t timeStamp);
 		float estimateInformation(float x,float y,float z,float range,uint32_t t);
@@ -67,7 +68,8 @@ class CFremenGrid
 		float lastPhiRange,lastPsiMin,lastPsiMax,lastRange;
 		int *raycasters;
 		int numRaycasters;
-		float obtainedInformation;
+		float obtainedInformationLast;
+		float obtainedInformationPredicted;
 		CFrelement* frelements;
 };
 
