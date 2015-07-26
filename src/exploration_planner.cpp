@@ -255,11 +255,13 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     if(msg->replan)
     {
+        ROS_INFO("REPLAN!!!");
         sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s-replan.grid",timeStr);
         sprintf(fileName2,"/localhome/strands/3dmaps/positions-%s-replan.txt",timeStr);
     }
     else
     {
+        ROS_INFO("NORMAL PLAN!!!");
         printf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
         printf(fileName2,"/localhome/strands/3dmaps/positions-%s.txt",timeStr);
     }
@@ -281,8 +283,8 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         if (locations_file!=NULL)
         {
             fprintf(locations_file, "%lf %lf %d\n",msg->x[i],msg->y[i],msg->value[i]);
-        ROS_INFO("Saving x:%lf y:%lf v:%d\n",msg->x[i],msg->y[i],msg->value[i]);
-}
+            ROS_INFO("Saving x:%lf y:%lf v:%d\n",msg->x[i],msg->y[i],msg->value[i]);
+        }
         if(msg->value[i])//true is reachable
         {
             reachability_grid_ptr[ind] += 0.2;
@@ -297,7 +299,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     }
 
-    if (locations_file==NULL)
+    if (locations_file!=NULL)
         fclose(locations_file);
 
     ROS_INFO("Saving reachability grid...");
