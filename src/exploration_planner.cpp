@@ -255,13 +255,13 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     if(msg->replan)
     {
-        sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s_replan.grid",timeStr);
-        sprintf(fileName2,"/localhome/strands/3dmaps/positions-%s_replan.locations",timeStr);
+        sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s-replan.grid",timeStr);
+        sprintf(fileName2,"/localhome/strands/3dmaps/positions-%s-replan.txt",timeStr);
     }
     else
     {
         printf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
-        printf(fileName2,"/localhome/strands/3dmaps/positions-%s.locations",timeStr);
+        printf(fileName2,"/localhome/strands/3dmaps/positions-%s.txt",timeStr);
     }
 
 
