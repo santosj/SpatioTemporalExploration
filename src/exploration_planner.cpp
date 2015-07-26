@@ -130,7 +130,7 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
 
     res.gx = (x - MIN_X)/entropies_step;
     res.gy = (y - MIN_Y)/entropies_step;
-    res.index = DIM_X*round(res.gy) + round(res.x);
+    res.index = DIM_X*round(res.gy) + round(res.gx);
 
     ROS_INFO("published debud point!");
 
