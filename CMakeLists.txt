@@ -3,7 +3,7 @@ project(spatiotemporalexploration)
 
 find_package(catkin REQUIRED COMPONENTS  pcl_conversions pcl_ros roscpp rospy std_msgs visualization_msgs geometry_msgs genmsg actionlib_msgs actionlib sensor_msgs image_transport)
 #set ( CMAKE_CXX_FLAGS "-Ofast -march=native -mno-avx -ggdb")
-#set ( CMAKE_CXX_FLAGS "-ggdb")
+set ( CMAKE_CXX_FLAGS "-ggdb")
 
 add_message_files(
   FILES

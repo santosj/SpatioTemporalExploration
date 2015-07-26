@@ -320,15 +320,40 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 	times[0] = timestamp;
 	int processed=0;
 	//rescale ray intersections to match the grid
+	float xi,yi,zi;
+	int setToOne = 0;
+	int setToZero = 0;
 	if (subsample == false){
 		//rescale all
 		for (int i = 0;i<size+1;i++)
 		{
+			//x[i] = (x[i]-oX)/resolution;
+			//y[i] = (y[i]-oY)/resolution;
+			//z[i] = (z[i]-oZ)/resolution;
 			x[i] = fmin(fmax((x[i]-oX)/resolution,0.5),xDim-1);
 			y[i] = fmin(fmax((y[i]-oY)/resolution,0.5),yDim-1);
 			z[i] = fmin(fmax((z[i]-oZ)/resolution,0.5),zDim-1);
+			//if (x[i] > 0.5 && x[i] < xDim-1 && y[i] > 0.5 && y[i] < yDim-1 && z[i] > 0.5 && z[i] < zDim -1)
+			//{
+				final = (int)x[i]+xDim*((int)y[i]+yDim*((int)z[i]));
+				if (aux[final] != 1){
+					aux[final] = 1;
+					if (d[i]==1)
+					{
+						dumInf = fmax(fmin(probs[final],maxProb),minProb);
+						obtainedInformation += -(log2f(dumInf)-residualInformation);
+						//if (probs[final] < 0.5)setToOne++;
+						frelements[final].add(times,oneVal,1);	
+						probs[final] = maxProb; //else probs[final] = minProb;
+					}
+					process[i] = 1;
+					processed++;
+				}
+			//}else{
+			//	process[i] = 0;
+			//}
 		}
-		memset(process,1,size);
+		//memset(process,1,size);
 	}else{
 		//rescale only one ray per cell, adjust ray direction to go to the ray centre 
 		memset(process,0,size);
@@ -344,7 +369,8 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					dumInf = fmax(fmin(probs[final],maxProb),minProb);
 					obtainedInformation += -(log2f(dumInf)-residualInformation);
 				       	frelements[final].add(times,oneVal,1);	
-					probs[final] = maxProb; //else probs[final] = minProb;
+					//if (probs[final] < 0.5) setToOne++;
+					probs[final] = maxProb;//(maxProb+probs[final]*3)/4; //else probs[final] = minProb;
 				}
 				process[i] = 1;
 				processed++;
@@ -423,7 +449,8 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					aux[index] = 1;
 					dumInf = fmax(fmin(probs[index],maxProb),minProb);
 					obtainedInformation += -(log2f(1-dumInf)-residualInformation);
-					probs[index] = minProb;
+					if (probs[index] > 0.5) setToZero++;
+					probs[index] = minProb;//(minProb+probs[index]*3)/4;
 				       	frelements[index].add(times,zeroVal,1);	
 				}
 				if (bx < by && bx < bz)
@@ -444,6 +471,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			calculate += timer.getTime();
 		}
 	}
+	printf("Cells: set to 0: %i. Set to 1: %i.\n",setToZero,setToOne);
 	//printf("preparation %i ms and update of %i cells took %i ms.\n",prepare,cells,calculate);
 	return obtainedInformation;
 } 
