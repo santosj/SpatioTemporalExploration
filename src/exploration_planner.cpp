@@ -113,14 +113,14 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
     float x = req.x;
     float y = req.y;
 
-//    res.gx = (x - MIN_X)/entropies_step;
-//    res.gy = (y - MIN_X)/entropies_step;
-    res.gx = ((x + MIN_X)/entropies_step);
+    //    res.gx = (x - MIN_X)/entropies_step;
+    //    res.gy = (y - MIN_X)/entropies_step;
+    res.gx = ((x - MIN_X)/entropies_step);
     res.gy = 0.0;//((y - MIN_Y)/entropies_step);
-//    ind = numCellsX*y + x;
-//    xp = MIN_X + entropies_step*(i+0.5);
-//    yp = MIN_Y + entropies_step*(j+0.5);
-//    (MIN_X + DIM_X*entropies_step)
+    //    ind = numCellsX*y + x;
+    //    xp = MIN_X + entropies_step*(i+0.5);
+    //    yp = MIN_Y + entropies_step*(j+0.5);
+    //    (MIN_X + DIM_X*entropies_step)
 
     reachable_point.pose.position.x = res.gx;
     reachable_point.pose.position.y = res.gy;
@@ -168,7 +168,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             //ROS_INFO("Grid ind: %d", ind);
             xp = MIN_X + entropies_step*(i+0.5);
             yp = MIN_Y + entropies_step*(j+0.5);
-	    minRange = rangeLimit*rangeLimit*2;//!!!
+            minRange = rangeLimit*rangeLimit*2;//!!!
 
             int xStart = (int)((xp-oX-range)/msg->info.resolution);
             int xEnd   = (int)((xp-oX+range)/msg->info.resolution);
@@ -182,7 +182,7 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
             xEnd   = fmax(fmin(xEnd,msg->info.width-1),0);
             yStart = fmax(fmin(yStart,msg->info.height-1),0);
             yEnd   = fmax(fmin(yEnd,msg->info.height-1),0);
-	    //ROS_INFO("Map ranges are %d-%d-%d %d-%d-%d",xStart,xM,xEnd,yStart,yM,yEnd);
+            //ROS_INFO("Map ranges are %d-%d-%d %d-%d-%d",xStart,xM,xEnd,yStart,yM,yEnd);
 
             int cellIndex=0;
             for (int y = yStart; y <= yEnd; y++)
@@ -190,8 +190,8 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
                 cellIndex = msg->info.width*y;
                 for (int x = xStart; x <= xEnd; x++)
                 {
-//			ROS_INFO("value %d   dist: %f    minRange: %f",msg->data[cellIndex+x], sqrt((x-xM)*(x-xM)+(y-yM)*(y-yM)), minRange);
-			//ROS_INFO("Map value is %i for index %d (%ix%i)", msg->data[cellIndex+x], cellIndex+x,x,y);
+                    //			ROS_INFO("value %d   dist: %f    minRange: %f",msg->data[cellIndex+x], sqrt((x-xM)*(x-xM)+(y-yM)*(y-yM)), minRange);
+                    //ROS_INFO("Map value is %i for index %d (%ix%i)", msg->data[cellIndex+x], cellIndex+x,x,y);
                     if (msg->data[cellIndex+x]  > 70 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
                     {
                         minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
@@ -199,8 +199,8 @@ void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
                 }
             }
 
-	//	ROS_INFO("Point (%f,%f) -> IND: %d -> obstacle dist: %f", xp, yp, ind, sqrt(minRange)*msg->info.resolution);
-	//	ROS_INFO("dist %f    range: %f", sqrt(minRange)*msg->info.resolution, range);
+            //	ROS_INFO("Point (%f,%f) -> IND: %d -> obstacle dist: %f", xp, yp, ind, sqrt(minRange)*msg->info.resolution);
+            //	ROS_INFO("dist %f    range: %f", sqrt(minRange)*msg->info.resolution, range);
             if(sqrt(minRange)*msg->info.resolution < range)
                 reachability_grid_ptr[ind] = 0.0;
             else
@@ -245,6 +245,26 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
     int ind;
     int x,y;
 
+    time_t timeNow;
+    time(&timeNow);
+    char timeStr[100];
+    char fileName[100], fileName2[100];
+    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
+
+    if(msg->replan)
+    {
+        sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s_replan.grid",timeStr);
+        sprintf(fileName2,"/localhome/strands/3dmaps/positions-%s_replan.locations",timeStr);
+    }
+    else
+    {
+        printf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
+        printf(fileName2,"/localhome/strands/3dmaps/positions-%s.locations",timeStr);
+    }
+
+
+    FILE* locations_file = fopen(fileName2,"w");
+
     ROS_INFO("Updating reachability grid.");
 
     for(int i = 0; i < nr_points; i++)
@@ -252,6 +272,12 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         x = ((msg->x[i] - MIN_X)/entropies_step) - 0.5;
         y = ((msg->y[i] - MIN_Y)/entropies_step) - 0.5;
         ind = numCellsX*y + x;
+
+        if (locations_file!=NULL)
+        {
+            ROS_INFO("error saving locations.");
+            fprintf(locations_file, "%.3lf %.3lf %d\n",msg->x[i],msg->y[i],msg->value[i]);
+        }
         //ROS_INFO("reach callback (%f,%f) -> (%d,%d) -> ind: %d", msg->x[i], msg->y[i], x, y, ind);
 
         if(msg->value[i])//true is reachable
@@ -268,14 +294,11 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     }
 
-    ROS_INFO("Saving reachability grid...");
 
-    time_t timeNow;
-    time(&timeNow);
-    char timeStr[100];
-    char fileName[100];
-    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
-    sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
+
+    fclose(locations_file);
+
+    ROS_INFO("Saving reachability grid...");
 
     FILE* file = fopen(fileName,"w");
 
@@ -349,15 +372,15 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     local_point.scale.x = entropies_step;
     local_point.scale.y = entropies_step;
 
-	//delete existent maxima markers
-	local_point.action = visualization_msgs::Marker::DELETE;
-	for(int i = 0; i < nr_previous_maximas; i++)
-	{
-		local_point.id = i;
-		maximas_makers.markers.push_back(local_point);
-	}
-	max_pub_ptr->publish(maximas_makers);
-	local_point.action = visualization_msgs::Marker::ADD;
+    //delete existent maxima markers
+    local_point.action = visualization_msgs::Marker::DELETE;
+    for(int i = 0; i < nr_previous_maximas; i++)
+    {
+        local_point.id = i;
+        maximas_makers.markers.push_back(local_point);
+    }
+    max_pub_ptr->publish(maximas_makers);
+    local_point.action = visualization_msgs::Marker::ADD;
 
     //auxiliary entropies grid:
     double entropies_aux[numCellsX + radius*2][numCellsY + radius*2];
@@ -384,7 +407,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 if(entropy_client_ptr->call(entropy_srv) > 0)
                 {
                     //ROS_INFO("obstacle distance: %f", entropy_srv.response.obstacle);
-            	    //ROS_INFO("estimated entropy: %f", entropy_srv.response.value);
+                    //ROS_INFO("estimated entropy: %f", entropy_srv.response.value);
                     if(entropy_srv.response.obstacle > 0.25)
                         reachability_grid_ptr[ind] = 1.0;
                     else
@@ -446,10 +469,10 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     }
 
     /*** Initial and Final Points ***/
-//    goal->first.position.x
-//    goal->first.position.y
-//    goal->last.position.x
-//    goal->last.position.y
+    //    goal->first.position.x
+    //    goal->first.position.y
+    //    goal->last.position.x
+    //    goal->last.position.y
 
 
 
@@ -505,7 +528,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         }
     }
     /* position of the robot */
-    ix[0] = goal->first.position.x; 
+    ix[0] = goal->first.position.x;
     iy[0] =  goal->first.position.y;
     /* position of the charging station */
     ix[goal->max_loc+1] = goal->last.position.x;
@@ -528,7 +551,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         result.locations.poses.push_back(pose_aux);
     }
 
-	nr_previous_maximas = goal->max_loc;
+    nr_previous_maximas = goal->max_loc;
     ROS_INFO("Plan completed! Sending results...");
 
     //send goals
@@ -616,10 +639,10 @@ int main(int argc,char *argv[])
 
 
     ROS_INFO("Waiting for the no go map!");
-//    while(!map_received)
-//        ROS_INFO("map received %d", map_received);
+    //    while(!map_received)
+    //        ROS_INFO("map received %d", map_received);
 
-//    map_sub.shutdown();
+    //    map_sub.shutdown();
 
 
 
