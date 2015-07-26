@@ -39,6 +39,7 @@ catkin_package(CATKIN_DEPENDS roscpp message_runtime pcl_conversions pcl_ros std
 include_directories(${catkin_INCLUDE_DIRS}) 
 
 
+add_executable(exploration_monitor src/exploration_monitor.cpp)
 add_executable(fremengrid src/fremenGrid.cpp)
 add_executable(fremenutil src/fremenUtil.cpp)
 add_executable(frontier_exploration src/frontier_exploration.cpp)
@@ -88,6 +89,7 @@ target_link_libraries(exploration_planner order)
 
 
 target_link_libraries(exploration ${catkin_LIBRARIES})
+target_link_libraries(exploration_monitor ${catkin_LIBRARIES} curl)
 target_link_libraries(exploration_executioner ${catkin_LIBRARIES})
 target_link_libraries(exploration_planner ${catkin_LIBRARIES})
 target_link_libraries(exploration_scheduler ${catkin_LIBRARIES})
@@ -97,8 +99,4 @@ target_link_libraries(flat ${catkin_LIBRARIES})
 target_link_libraries(flat_generate_grids ${catkin_LIBRARIES})
 target_link_libraries(flat_diff ${catkin_LIBRARIES})
 target_link_libraries(frontier_exploration ${catkin_LIBRARIES} SDL SDL_ttf)
-
-
-
-
 
