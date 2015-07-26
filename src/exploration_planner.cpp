@@ -281,7 +281,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         if (locations_file!=NULL)
         {
             fprintf(locations_file, "%lf %lf %d\n",msg->x[i],msg->y[i],msg->value[i]);
-        ROS_INFO("Saving (%f,%f) -> (%d,%d) -> ind: %d", msg->x[i], msg->y[i], x, y, ind);
+        ROS_INFO("Saving x:%lf y:%lf v:%d\n",msg->x[i],msg->y[i],msg->value[i]);
 }
         if(msg->value[i])//true is reachable
         {

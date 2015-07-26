@@ -390,10 +390,10 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //PTU initial position
     movePtu(0.0,0.0);
 
-    if(goal->replan)
-        reachable_points.replan = true;
-    else
+    if(execution_result.success)
         reachable_points.replan = false;
+    else
+        reachable_points.replan = true;
 
     reach_pub_ptr->publish(reachable_points);
     as->setSucceeded(execution_result);
