@@ -125,7 +125,7 @@ bool editGrid(spatiotemporalexploration::EditValue::Request  &req, spatiotempora
     reachable_point.pose.position.x = res.gx;
     reachable_point.pose.position.y = res.gy;
 
-    res.index = DIM_X*res.gy + res.
+    //res.index = DIM_X*res.gy + res;
 
     debug_pub_ptr->publish(reachable_point);
     ROS_INFO("published debud point!");
