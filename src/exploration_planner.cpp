@@ -267,6 +267,9 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
 
     FILE* locations_file = fopen(fileName2,"w");
 
+    if (locations_file==NULL)
+        ROS_INFO("error openning locations file");
+
     ROS_INFO("Updating reachability grid.");
 
     for(int i = 0; i < nr_points; i++)
@@ -275,11 +278,7 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         y = ((msg->y[i] - MIN_Y)/entropies_step) - 0.5;
         ind = numCellsX*y + x;
 
-        if (locations_file!=NULL)
-        {
-            ROS_INFO("error saving locations.");
-            fprintf(locations_file, "%.3lf %.3lf %d\n",msg->x[i],msg->y[i],msg->value[i]);
-        }
+        fprintf(locations_file, "%lf %lf %d\n",msg->x[i],msg->y[i],msg->value[i]);
         //ROS_INFO("reach callback (%f,%f) -> (%d,%d) -> ind: %d", msg->x[i], msg->y[i], x, y, ind);
 
         if(msg->value[i])//true is reachable
@@ -295,8 +294,6 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
         }
 
     }
-
-
 
     fclose(locations_file);
 
