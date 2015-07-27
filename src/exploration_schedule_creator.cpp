@@ -27,7 +27,7 @@ int main(int argc,char *argv[])
 	ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
 
 	PlanClient ac_plan("planner", true);
-    ac_plan.waitForServer();
+	ac_plan.waitForServer();
 
 	spatiotemporalexploration::PlanGoal plan_goal;
 	spatiotemporalexploration::ExecutionGoal exec_goal;
@@ -36,7 +36,7 @@ int main(int argc,char *argv[])
 	/*the scheduling part*/
 	ros::Time currentTime = ros::Time::now();
 	printf("TIME: %i\n",currentTime.sec);
-	uint32_t midnight = (currentTime.sec/(24*3600)+1*0)*24*3600; //remove +1 to plan retrospectively
+	uint32_t midnight = (currentTime.sec/(24*3600)+1)*24*3600-3600; //remove +1 to plan retrospectively
 	printf("MIDNIGHT: %i %i\n",midnight,midnight-currentTime.sec);
 
 

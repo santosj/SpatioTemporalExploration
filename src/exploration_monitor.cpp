@@ -9,7 +9,7 @@ int minimalBatteryLevel = 50;
 uint32_t lastChargeTime = -1;
 uint32_t lastMessageTime = -1;
 uint32_t messageInterval  = 60;
-uint32_t chargingInterval  = 30;
+uint32_t chargingInterval  = 15;
 
 int sendMessage(const char *number,const char *text,const char *timeInfo);
 
@@ -28,8 +28,9 @@ void batteryCallBack(const scitos_msgs::BatteryState &msg)
 			time_t timeInfo =  lastChargeTime; 
 			strftime(testTime, sizeof(testTime), "%Y-%m-%d_%H:%M:%S",localtime(&timeInfo));
 			lastMessageTime = now.sec;
-			sendMessage("07438618086","Linda did not charge since ",testTime);
-			sendMessage("07578802288","Linda did not charge since ",testTime);
+			//sendMessage("07438618086","Linda did not charge since ",testTime);
+			//sendMessage("07578802288","Linda did not charge since ",testTime);
+			sendMessage("07516508311","Linda did not charge since ",testTime);
 		}else{
 			ROS_DEBUG("WARNING: robot missed the charging %i seconds ago.",(int)(now.sec-lastChargeTime));
 		}

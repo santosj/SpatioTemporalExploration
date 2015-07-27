@@ -260,7 +260,7 @@ int main(int argc,char *argv[])
                         ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
                         ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
 
-                        if(!robot_charging && !plan_complete)
+                        if(!robot_charging)
                         {
                             ROS_INFO("There is no time for a new plan. Going to the charghing station!");
                             strands_navigation_msgs::MonitoredNavigationGoal goal;
