@@ -415,7 +415,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                     if(entropy_srv.response.obstacle > 0.25)
                         reachability_grid_ptr[ind] = 1.0;
                     else
-                        reachability_grid_ptr[ind] = 0.0;
+                        reachability_grid_ptr[ind] = 0.01;
                     entropies_aux[i + radius][j + radius] = entropy_srv.response.value * reachability_grid_ptr[ind];
                 }
                 else
