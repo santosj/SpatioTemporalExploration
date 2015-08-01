@@ -14,6 +14,7 @@ void intHandler(int dummy)
 { 
 	ROS_INFO("Shutting down");
 	stop = true;
+	ros::shutdown();
 }
 
 #define SLOTS 96
@@ -131,7 +132,7 @@ int main(int argc,char *argv[])
 		final_pose.position.y = 0.0;
 
 
-		if (plans[position] > 0)
+		if (plans[position] > 0 && stop == false)
 		{
 			ROS_INFO("Asking for a plan.");
 

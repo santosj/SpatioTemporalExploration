@@ -118,7 +118,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     int numPoints = 14;
     int point = 0;
     float pan[] =  { 0.00, 0.90, 1.80, 2.70, 2.70, 1.80, 0.90, 0.00,-0.90,-1.80,-2.70,-2.70,-1.80,-0.90,0.00};
-    float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
+    float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.10,-0.10,-0.10,-0.10,-0.10,-0.10,-0.10, 0.50, 0.50, 0.50,0.00};
 
 
     //Locations to explore
@@ -189,6 +189,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
                 point = 0;
 
+		movePtu(pan[0],tilt[0]);
                 ros::spinOnce();
                 while (ros::ok() && point < numPoints)
                 {

@@ -36,7 +36,7 @@ int main(int argc,char *argv[])
 	/*the scheduling part*/
 	ros::Time currentTime = ros::Time::now();
 	printf("TIME: %i\n",currentTime.sec);
-	uint32_t midnight = (currentTime.sec/(24*3600)+1)*24*3600-3600; //remove +1 to plan retrospectively
+	uint32_t midnight = (currentTime.sec/(24*3600)+1*atoi(argv[1]))*24*3600-3600; //remove +1 to plan retrospectively
 	printf("MIDNIGHT: %i %i\n",midnight,midnight-currentTime.sec);
 
 
@@ -54,8 +54,8 @@ int main(int argc,char *argv[])
 	for (int i = 2;i<SLOTS;i+=4) plan[i] = 2;
 
 	ROS_INFO("asking for a plan");
-	if (argc == 2){
-		FILE* file = fopen(argv[1],"w");
+	if (argc == 3){
+		FILE* file = fopen(argv[2],"w");
 		for (int i = 0;i<SLOTS;i++)
 		{
 			if (plan[i] == 1){
@@ -83,8 +83,8 @@ int main(int argc,char *argv[])
 		}
 		fclose(file);
 	}
-	if (argc == 3){
-		FILE* entrop = fopen(argv[1],"r");
+	if (argc == 4){
+		FILE* entrop = fopen(argv[2],"r");
 		float dummy = 0;
 		for (int i = 1;i<SLOTS;i+=2)
 		{
@@ -126,7 +126,7 @@ int main(int argc,char *argv[])
 		}while (numExpTot != SLOTS/4);
 
 		for (int i = 0;i<SLOTS;i++) printf("PLAN: %02i:%02i %i %i\n",i*24/SLOTS,(i%(SLOTS/24))*(60/(SLOTS/24)),timeSlots[i],plan[i]);
-		FILE *planf = fopen(argv[2],"w");
+		FILE *planf = fopen(argv[3],"w");
 		for (int i = 0;i<SLOTS;i++) fprintf(planf,"%02i:%02i %i %i\n",i*24/SLOTS,(i%(SLOTS/24))*(60/(SLOTS/24)),timeSlots[i],plan[i]);
 		fclose(planf);
 		printf("Morning: %i %.f\n",numExpMor,numEntMor);
