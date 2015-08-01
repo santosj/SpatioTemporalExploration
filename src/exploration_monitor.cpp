@@ -28,9 +28,9 @@ void batteryCallBack(const scitos_msgs::BatteryState &msg)
 			time_t timeInfo =  lastChargeTime; 
 			strftime(testTime, sizeof(testTime), "%Y-%m-%d_%H:%M:%S",localtime(&timeInfo));
 			lastMessageTime = now.sec;
-			//sendMessage("07438618086","Linda did not charge since ",testTime);
-			//sendMessage("07578802288","Linda did not charge since ",testTime);
-			sendMessage("07516508311","Linda did not charge since ",testTime);
+			sendMessage("07438618086","Linda did not charge since ",testTime);//Tom
+			//sendMessage("07578802288","Linda did not charge since ",testTime);//Joao
+			//sendMessage("07516508311","Linda did not charge since ",testTime);//Jaime
 		}else{
 			ROS_DEBUG("WARNING: robot missed the charging %i seconds ago.",(int)(now.sec-lastChargeTime));
 		}

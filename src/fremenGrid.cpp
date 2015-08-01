@@ -261,13 +261,13 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
 				
 				if(estimate > minP && estimate < maxP)
 				{
-                    if(req.set_color == 0)
-                    {
-                        m_color.r = 0.0;
-                        m_color.b = z/maxZ;
-                        m_color.g = 1.0 - m_color.b;
-                        m_color.a = 0.8;
-                    }
+					if(req.set_color == 0)
+					{
+						m_color.r = 0.0;
+						m_color.b = z/maxZ;
+						m_color.g = 1.0 - m_color.b;
+						m_color.a = 0.8;
+					}
 					cubeCenter.x = x;
 					cubeCenter.y = y;
 					cubeCenter.z = z;

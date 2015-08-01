@@ -116,7 +116,7 @@ int CFrelement::add(uint32_t times[],unsigned char states[],int length)
 	{
 		re = allFrelements[i].realStates-allFrelements[i].realBalance;
 		im = allFrelements[i].imagStates-allFrelements[i].imagBalance;
-		if (1.5*tmp[i].period <= duration) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0;
+		if (1.5*tmp[i].period <= duration && tmp[i].period>3600) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0;
 		if (tmp[i].amplitude < FREMEN_AMPLITUDE_THRESHOLD) tmp[i].amplitude = 0;
 		//frelements[i].amplitude = sqrt(re*re+im*im)/measurements;
 		tmp[i].phase = atan2(im,re);
@@ -176,7 +176,7 @@ void CFrelement::update()
 	{
 		re = allFrelements[i].realStates-allFrelements[i].realBalance;
 		im = allFrelements[i].imagStates-allFrelements[i].imagBalance;
-		if (1.5*0*tmp[i].period <= duration && tmp[i].period>3600) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0; 	//TODO zero!
+		if (1.5*tmp[i].period <= duration && tmp[i].period>3600) tmp[i].amplitude = sqrt(re*re+im*im)/measurements; else tmp[i].amplitude = 0; 	//TODO zero!
 		if (tmp[i].amplitude < FREMEN_AMPLITUDE_THRESHOLD) tmp[i].amplitude = 0;
 		//frelements[i].amplitude = sqrt(re*re+im*im)/measurements;
 		tmp[i].phase = atan2(im,re);
