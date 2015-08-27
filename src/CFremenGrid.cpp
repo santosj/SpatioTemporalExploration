@@ -117,8 +117,8 @@ float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,ui
 	pz -= offZ;
 	int startIndex =  (int)px+xDim*((int)py+yDim*((int)pz));
 	int backupIndex = startIndex;
-	float psiMax = 0.7;
-	float psiMin = -0.5;
+	float psiMax = 0.9;
+	float psiMin = -0.6;
 	float phiRange = M_PI;
 	if (phiRange != lastPhiRange || psiMax != lastPsiMax || psiMin != lastPsiMin || range != lastRange)
 	{

@@ -118,7 +118,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     int numPoints = 14;
     int point = 0;
     float pan[] =  { 0.00, 0.90, 1.80, 2.70, 2.70, 1.80, 0.90, 0.00,-0.90,-1.80,-2.70,-2.70,-1.80,-0.90,0.00};
-    float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.10,-0.10,-0.10,-0.10,-0.10,-0.10,-0.10, 0.50, 0.50, 0.50,0.00};
+    float tilt[] = { 0.50, 0.50, 0.50, 0.50,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20,-0.20, 0.50, 0.50, 0.50,0.00};
 
 
     //Locations to explore
@@ -160,7 +160,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //PTU initial position
     movePtu(0.0,0.0);
 
-    sleep(0.5);
+    sleep(1000000);
 
     //For each point in the plan the robot calls move base and takes measurements
     while (i < n)
@@ -205,11 +205,12 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                             ROS_ERROR("Failed to call measure service");
                             exit(1);
                         }
+                        ros::spinOnce();
+                        usleep(1200000);
 
                         point++;
                         movePtu(pan[point],tilt[point]);
                         ros::spinOnce();
-                        usleep(500000);
                         if(drawCells){
                             visualize_srv.request.red = visualize_srv.request.blue = 0.0;
                             visualize_srv.request.green = visualize_srv.request.alpha = 1.0;

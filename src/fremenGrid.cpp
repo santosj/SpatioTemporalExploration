@@ -94,8 +94,10 @@ using namespace std;
 
 bool debug = false;
 int integrateMeasurements = 0;
-float dept[307200];
-int measures[307200];
+int maxMeasurements = 15;
+int measurements = maxMeasurements;
+float *dept;
+
 
 CFremenGrid *grid;
 tf::TransformListener *tf_listener;
@@ -110,6 +112,114 @@ bool projectGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotempo
     ROS_INFO("3D Grid of %ix%ix%i loaded !",grid->xDim,grid->yDim,grid->zDim);
     res.result = true;
     return true;
+}
+
+void imageCallback(const sensor_msgs::ImageConstPtr& msg)
+{
+	float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
+	//if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
+
+	//Disabled code does some filtration
+	float *dataPtr;
+	float di;
+	if (measurements < maxMeasurements)
+	{
+		float di = 0;
+		if (measurements == 0) memset(dept,0,sizeof(float)*307200*(maxMeasurements+1));
+		for (int i = 0;i<307200;i++)
+		{
+			dataPtr = &dept[i*(maxMeasurements+1)];
+			di = (msg->data[i*2]+256*msg->data[i*2+1])/1000.0;
+			dataPtr[measurements+1] = di;
+			int j=measurements+1;
+			while (dataPtr[j] < dataPtr[j-1])
+			{
+				dataPtr[j] = dataPtr[j-1];	
+				dataPtr[j-1] = di;
+				j--;	
+			} 
+		}
+	}
+	measurements++;
+	if (measurements==maxMeasurements)
+	{
+		/*for (int i = 0;i<307200;i++)
+		  {
+		  for (int j = 0;j<maxMeasurements;j++) printf("%.3f ",dept[j+i*(maxMeasurements+1)]);
+		  printf("\n");
+		  }*/
+		int len =  msg->height*msg->width;
+		float vx = 1/570.0; 
+		float vy = 1/570.0; 
+		float cx = -320.5;
+		float cy = -240.5;
+		int width = msg->width;
+		int height = msg->height;
+		float fx = (1+cx)*vx;
+		float fy = (1+cy)*vy;
+		float lx = (width+cx)*vx;
+		float ly = (height+cy)*vy;
+		float x[len+1];
+		float y[len+1];
+		float z[len+1];
+		float d[len+1];
+		float di,psi,phi,phiPtu,psiPtu,xPtu,yPtu,zPtu,ix,iy,iz;
+		int cnt = 0;
+		di=psi=phi=phiPtu=psiPtu=xPtu=yPtu=zPtu=0;
+
+		tf::StampedTransform st;
+		try {
+			tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
+			tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp,st);
+			//tf_listener->waitForTransform("/chest_xtion_depth_optical_frame","/chest_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
+			//tf_listener->lookupTransform("/chest_xtion_depth_optical_frame","/chest_xtion_depth_optical_frame",msg->header.stamp,st);
+		}
+		catch (tf::TransformException ex) {
+			ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
+			return;
+		}
+		CTimer timer;
+		timer.reset();
+		timer.start();
+		x[len] = xPtu = st.getOrigin().x();
+		y[len] = yPtu = st.getOrigin().y();
+		z[len] = zPtu = st.getOrigin().z();
+		double a,b,c;	
+		tf::Matrix3x3  rot = st.getBasis();
+		rot.getEulerYPR(a,b,c,1);
+		printf("%.3f %.3f %.3f\n",a,b,c);
+		psi = -M_PI/2-c;
+		phi = a-c-psi;
+		int medinda; //median index
+		for (float h = fy;h<ly;h+=vy)
+		{
+			for (float w = fx;w<lx;w+=vx)
+			{
+				medinda = cnt*(maxMeasurements+1);
+				di = dept[medinda+(maxMeasurements+1)/2];//(msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0; 
+				d[cnt] = 1;
+				if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
+				{
+					di = 0;//CAMERA_RANGE;
+					d[cnt] = 0;
+				}
+				ix = di*(cos(psi)-sin(psi)*h);
+				iy = -w*di;
+				iz = -di*(sin(psi)+cos(psi)*h);
+				x[cnt] = cos(phi)*ix-sin(phi)*iy+xPtu;
+				y[cnt] = sin(phi)*ix+cos(phi)*iy+yPtu;
+				z[cnt] = iz+zPtu;
+				cnt++;	
+			}
+		}
+		int lastInfo = grid->obtainedInformationLast;
+		printf("Depth image to point cloud took %i ms,",timer.getTime());
+		grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
+		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+//		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformation-lastInfo);	
+		//printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
+	}
 }
  
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
@@ -195,6 +305,7 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
 {
 	std_msgs::Float32 info;
 	integrateMeasurements = 3;
+	measurements = 0;
 	res.result = true;
 	info.data = res.information = grid->getObtainedInformationLast();
 	information_publisher.publish(info);
@@ -287,7 +398,7 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
 }
 
 
-void imageCallback(const sensor_msgs::ImageConstPtr& msg)
+void imageCallbacak(const sensor_msgs::ImageConstPtr& msg)
 {
 	float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
 	//if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
@@ -389,6 +500,7 @@ int main(int argc,char *argv[])
     ros::init(argc, argv, "fremengrid");
     ros::NodeHandle n;
     grid = new CFremenGrid(MIN_X,MIN_Y,MIN_Z,DIM_X,DIM_Y,DIM_Z,RESOLUTION);
+    dept = (float*)malloc(sizeof(float)*307200*(maxMeasurements+1));
 
     n.setParam("/fremenGrid/minX",MIN_X);
     n.setParam("/fremenGrid/minY",MIN_Y);
