@@ -91,6 +91,13 @@
 #define RESOLUTION 0.1
 
 using namespace std;
+//CORRECT VALUES (1m x 1m and adjust positions)
+float roi_minx[] = {-2.8, -2.8, -2.5, -2.5, -3.4, -4.4, -4.4, -6.5, -6.5, -6.5, -8.8};
+float roi_maxx[] = {-2.0, -2.0, -1.7, -1.7, -2.6, -3.6, -3.8, -5.7, -5.7, -5.7, -8.0};
+float roi_miny[] = {3.8, 0.7, -3.0, -5.0, 2.9, -2.7, -4.8, 3.8, 2.4, 0.6, 4.4};
+float roi_maxy[] = {4.6, 1.5, -2.2, -4.2, 3.7, -1.9, -4.0, 4.6, 3.4, 1.4, 5.2};
+float roi_minz = 0.1;
+float roi_maxz = 1.6;
 
 bool debug = false;
 int integrateMeasurements = 0;
@@ -116,112 +123,112 @@ bool projectGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotempo
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-	float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
-	//if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
+    float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
+    //if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
 
-	//Disabled code does some filtration
-	float *dataPtr;
-	float di;
-	if (measurements < maxMeasurements)
-	{
-		float di = 0;
-		if (measurements == 0) memset(dept,0,sizeof(float)*307200*(maxMeasurements+1));
-		for (int i = 0;i<307200;i++)
-		{
-			dataPtr = &dept[i*(maxMeasurements+1)];
-			di = (msg->data[i*2]+256*msg->data[i*2+1])/1000.0;
-			dataPtr[measurements+1] = di;
-			int j=measurements+1;
-			while (dataPtr[j] < dataPtr[j-1])
-			{
-				dataPtr[j] = dataPtr[j-1];	
-				dataPtr[j-1] = di;
-				j--;	
-			} 
-		}
-	}
-	measurements++;
-	if (measurements==maxMeasurements)
-	{
-		/*for (int i = 0;i<307200;i++)
-		  {
-		  for (int j = 0;j<maxMeasurements;j++) printf("%.3f ",dept[j+i*(maxMeasurements+1)]);
-		  printf("\n");
-		  }*/
-		int len =  msg->height*msg->width;
-		float vx = 1/570.0; 
-		float vy = 1/570.0; 
-		float cx = -320.5;
-		float cy = -240.5;
-		int width = msg->width;
-		int height = msg->height;
-		float fx = (1+cx)*vx;
-		float fy = (1+cy)*vy;
-		float lx = (width+cx)*vx;
-		float ly = (height+cy)*vy;
-		float x[len+1];
-		float y[len+1];
-		float z[len+1];
-		float d[len+1];
-		float di,psi,phi,phiPtu,psiPtu,xPtu,yPtu,zPtu,ix,iy,iz;
-		int cnt = 0;
-		di=psi=phi=phiPtu=psiPtu=xPtu=yPtu=zPtu=0;
+    //Disabled code does some filtration
+    float *dataPtr;
+    float di;
+    if (measurements < maxMeasurements)
+    {
+        float di = 0;
+        if (measurements == 0) memset(dept,0,sizeof(float)*307200*(maxMeasurements+1));
+        for (int i = 0;i<307200;i++)
+        {
+            dataPtr = &dept[i*(maxMeasurements+1)];
+            di = (msg->data[i*2]+256*msg->data[i*2+1])/1000.0;
+            dataPtr[measurements+1] = di;
+            int j=measurements+1;
+            while (dataPtr[j] < dataPtr[j-1])
+            {
+                dataPtr[j] = dataPtr[j-1];
+                dataPtr[j-1] = di;
+                j--;
+            }
+        }
+    }
+    measurements++;
+    if (measurements==maxMeasurements)
+    {
+        /*for (int i = 0;i<307200;i++)
+          {
+          for (int j = 0;j<maxMeasurements;j++) printf("%.3f ",dept[j+i*(maxMeasurements+1)]);
+          printf("\n");
+          }*/
+        int len =  msg->height*msg->width;
+        float vx = 1/570.0;
+        float vy = 1/570.0;
+        float cx = -320.5;
+        float cy = -240.5;
+        int width = msg->width;
+        int height = msg->height;
+        float fx = (1+cx)*vx;
+        float fy = (1+cy)*vy;
+        float lx = (width+cx)*vx;
+        float ly = (height+cy)*vy;
+        float x[len+1];
+        float y[len+1];
+        float z[len+1];
+        float d[len+1];
+        float di,psi,phi,phiPtu,psiPtu,xPtu,yPtu,zPtu,ix,iy,iz;
+        int cnt = 0;
+        di=psi=phi=phiPtu=psiPtu=xPtu=yPtu=zPtu=0;
 
-		tf::StampedTransform st;
-		try {
-			tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
-			tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp,st);
-			//tf_listener->waitForTransform("/chest_xtion_depth_optical_frame","/chest_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
-			//tf_listener->lookupTransform("/chest_xtion_depth_optical_frame","/chest_xtion_depth_optical_frame",msg->header.stamp,st);
-		}
-		catch (tf::TransformException ex) {
-			ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
-			return;
-		}
-		CTimer timer;
-		timer.reset();
-		timer.start();
-		x[len] = xPtu = st.getOrigin().x();
-		y[len] = yPtu = st.getOrigin().y();
-		z[len] = zPtu = st.getOrigin().z();
-		double a,b,c;	
-		tf::Matrix3x3  rot = st.getBasis();
-		rot.getEulerYPR(a,b,c,1);
-		printf("%.3f %.3f %.3f\n",a,b,c);
-		psi = -M_PI/2-c;
-		phi = a-c-psi;
-		int medinda; //median index
-		for (float h = fy;h<ly;h+=vy)
-		{
-			for (float w = fx;w<lx;w+=vx)
-			{
-				medinda = cnt*(maxMeasurements+1);
-				di = dept[medinda+(maxMeasurements+1)/2];//(msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0; 
-				d[cnt] = 1;
-				if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
-				{
-					di = 0;//CAMERA_RANGE;
-					d[cnt] = 0;
-				}
-				ix = di*(cos(psi)-sin(psi)*h);
-				iy = -w*di;
-				iz = -di*(sin(psi)+cos(psi)*h);
-				x[cnt] = cos(phi)*ix-sin(phi)*iy+xPtu;
-				y[cnt] = sin(phi)*ix+cos(phi)*iy+yPtu;
-				z[cnt] = iz+zPtu;
-				cnt++;	
-			}
-		}
-		int lastInfo = grid->obtainedInformationLast;
-		printf("Depth image to point cloud took %i ms,",timer.getTime());
-		grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
-		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-//		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformation-lastInfo);	
-		//printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
-	}
+        tf::StampedTransform st;
+        try {
+            tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
+            tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp,st);
+            //tf_listener->waitForTransform("/chest_xtion_depth_optical_frame","/chest_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
+            //tf_listener->lookupTransform("/chest_xtion_depth_optical_frame","/chest_xtion_depth_optical_frame",msg->header.stamp,st);
+        }
+        catch (tf::TransformException ex) {
+            ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
+            return;
+        }
+        CTimer timer;
+        timer.reset();
+        timer.start();
+        x[len] = xPtu = st.getOrigin().x();
+        y[len] = yPtu = st.getOrigin().y();
+        z[len] = zPtu = st.getOrigin().z();
+        double a,b,c;
+        tf::Matrix3x3  rot = st.getBasis();
+        rot.getEulerYPR(a,b,c,1);
+        printf("%.3f %.3f %.3f\n",a,b,c);
+        psi = -M_PI/2-c;
+        phi = a-c-psi;
+        int medinda; //median index
+        for (float h = fy;h<ly;h+=vy)
+        {
+            for (float w = fx;w<lx;w+=vx)
+            {
+                medinda = cnt*(maxMeasurements+1);
+                di = dept[medinda+(maxMeasurements+1)/2];//(msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0;
+                d[cnt] = 1;
+                if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
+                {
+                    di = 0;//CAMERA_RANGE;
+                    d[cnt] = 0;
+                }
+                ix = di*(cos(psi)-sin(psi)*h);
+                iy = -w*di;
+                iz = -di*(sin(psi)+cos(psi)*h);
+                x[cnt] = cos(phi)*ix-sin(phi)*iy+xPtu;
+                y[cnt] = sin(phi)*ix+cos(phi)*iy+yPtu;
+                z[cnt] = iz+zPtu;
+                cnt++;
+            }
+        }
+        int lastInfo = grid->obtainedInformationLast;
+        printf("Depth image to point cloud took %i ms,",timer.getTime());
+        grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
+        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+        //		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformation-lastInfo);
+        //printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
+    }
 }
- 
+
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
     grid->load(req.filename.c_str());
@@ -240,259 +247,361 @@ bool saveGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
 void points(const sensor_msgs::PointCloud2ConstPtr& points2)
 {
 
-	CTimer timer;
-	if (integrateMeasurements == 20){
-		timer.reset();
-		timer.start();
-		sensor_msgs::PointCloud points1,points;
-		sensor_msgs::convertPointCloud2ToPointCloud(*points2,points1);
-		tf::StampedTransform st;
-		try {
-			tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",points2->header.stamp, ros::Duration(1.0));
-			tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",points2->header.stamp,st);
-		}
-		catch (tf::TransformException ex) {
-			ROS_ERROR("FreMEn map cound not incorporate the latest measurements %s",ex.what());
-			return;
-		}
-		printf("Transform arrived %i \n",timer.getTime());	
-		timer.reset();	
-		tf_listener->transformPointCloud("/map", points1,points);
-		int size=points.points.size();
-		std::cout << "There are " << size << " fields." << std::endl;
-		std::cout << "Point " << st.getOrigin().x() << " " <<  st.getOrigin().y() << " " << st.getOrigin().z() << " " << std::endl;
-		float x[size+1],y[size+1],z[size+1],d[size+1];
-		int last = 0;
-		for(unsigned int i = 0; i < size; i++){
-			if (isnormal(points.points[i].x) > 0)
-			{	
-				x[last] = points.points[i].x; 
-				y[last] = points.points[i].y;
-				z[last] = points.points[i].z;
-				d[last] = 1;
-				last++;
-			}
-		}
-		x[last] = st.getOrigin().x();
-		y[last] = st.getOrigin().y();
-		z[last] = st.getOrigin().z();
-		printf("Point cloud processed %i \n",timer.getTime());
-		timer.reset();	
-		grid->incorporate(x,y,z,d,last,points2->header.stamp.sec);
-		printf("Grid updated %i \n",timer.getTime());	
-		integrateMeasurements--;
-	}
-	if (integrateMeasurements == 1)
-	{
-		integrateMeasurements--;
-		spatiotemporalexploration::Visualize::Request req;
-		req.green = req.blue = 0.0;
-		req.red = req.alpha = 1.0;
-	}
+    CTimer timer;
+    if (integrateMeasurements == 20){
+        timer.reset();
+        timer.start();
+        sensor_msgs::PointCloud points1,points;
+        sensor_msgs::convertPointCloud2ToPointCloud(*points2,points1);
+        tf::StampedTransform st;
+        try {
+            tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",points2->header.stamp, ros::Duration(1.0));
+            tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",points2->header.stamp,st);
+        }
+        catch (tf::TransformException ex) {
+            ROS_ERROR("FreMEn map cound not incorporate the latest measurements %s",ex.what());
+            return;
+        }
+        printf("Transform arrived %i \n",timer.getTime());
+        timer.reset();
+        tf_listener->transformPointCloud("/map", points1,points);
+        int size=points.points.size();
+        std::cout << "There are " << size << " fields." << std::endl;
+        std::cout << "Point " << st.getOrigin().x() << " " <<  st.getOrigin().y() << " " << st.getOrigin().z() << " " << std::endl;
+        float x[size+1],y[size+1],z[size+1],d[size+1];
+        int last = 0;
+        for(unsigned int i = 0; i < size; i++){
+            if (isnormal(points.points[i].x) > 0)
+            {
+                x[last] = points.points[i].x;
+                y[last] = points.points[i].y;
+                z[last] = points.points[i].z;
+                d[last] = 1;
+                last++;
+            }
+        }
+        x[last] = st.getOrigin().x();
+        y[last] = st.getOrigin().y();
+        z[last] = st.getOrigin().z();
+        printf("Point cloud processed %i \n",timer.getTime());
+        timer.reset();
+        grid->incorporate(x,y,z,d,last,points2->header.stamp.sec);
+        printf("Grid updated %i \n",timer.getTime());
+        integrateMeasurements--;
+    }
+    if (integrateMeasurements == 1)
+    {
+        integrateMeasurements--;
+        spatiotemporalexploration::Visualize::Request req;
+        req.green = req.blue = 0.0;
+        req.red = req.alpha = 1.0;
+    }
 }
 
 bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
-	std_msgs::Float32 info;
-	integrateMeasurements = 2;
-	res.result = true;
-	info.data = res.information = grid->getObtainedInformationLast();
-	information_publisher.publish(info);
-	return true;
+    std_msgs::Float32 info;
+    integrateMeasurements = 2;
+    res.result = true;
+    info.data = res.information = grid->getObtainedInformationLast();
+    information_publisher.publish(info);
+    return true;
 }
 
 bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
-	std_msgs::Float32 info;
-	integrateMeasurements = 3;
-	measurements = 0;
-	res.result = true;
-	info.data = res.information = grid->getObtainedInformationLast();
-	information_publisher.publish(info);
-	return true;
+    std_msgs::Float32 info;
+    integrateMeasurements = 3;
+    measurements = 0;
+    res.result = true;
+    info.data = res.information = grid->getObtainedInformationLast();
+    information_publisher.publish(info);
+    return true;
 }
 
 bool estimateEntropy(spatiotemporalexploration::Entropy::Request  &req, spatiotemporalexploration::Entropy::Response &res)
 {
-	grid->recalculate(req.t);
-	//ROS_INFO("Entropy estimate called %.3f %.3f \n",req.x,req.y);
-	res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
-	res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,5.0);
-	return true;
+    grid->recalculate(req.t);
+    //ROS_INFO("Entropy estimate called %.3f %.3f \n",req.x,req.y);
+    res.value = grid->estimateInformation(req.x,req.y,req.z,req.r,req.t);
+    res.obstacle = grid->getClosestObstacle(req.x,req.y,0.5,5.0);
+    return true;
 }
+
+bool visualizeRoi(spatiotemporalexploration::Visualize::Request  &req, spatiotemporalexploration::Visualize::Response &res)
+{
+
+    //open file to save values:
+    FILE* f=fopen(req.filename.c_str(),"w");
+    if (f == NULL)
+    {
+        printf("Error opening file!\n");
+        return false;
+    }
+
+
+    //init visualization markers:
+    visualization_msgs::Marker markers;
+    geometry_msgs::Point cubeCenter;
+
+    /// set color
+    std_msgs::ColorRGBA m_color;
+    m_color.r = req.red;
+    m_color.g = req.green;
+    m_color.b = req.blue;
+    m_color.a = req.alpha;
+    markers.color = m_color;
+
+    /// set type, frame and size
+    markers.header.frame_id = "/map";
+    markers.header.stamp = ros::Time::now();
+    markers.ns = req.name;
+    markers.action = visualization_msgs::Marker::ADD;
+    markers.type = visualization_msgs::Marker::CUBE_LIST;
+    markers.scale.x = RESOLUTION;
+    markers.scale.y = RESOLUTION;
+    markers.scale.z = RESOLUTION;
+    markers.points.clear();
+
+    // prepare to iterate over the entire grid
+    float resolution = grid->resolution;
+    float minX = grid->oX;
+    float minY = grid->oY;
+    float minZ = grid->oZ;
+    float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
+    float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
+    float maxZ = 2.1;//minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
+    int cnt = 0;
+    int cells = 0;
+    float estimate,minP,maxP;
+    minP = req.minProbability;
+    maxP = req.maxProbability;
+    if (req.stamp != 0 && req.type == 1) grid->recalculate(req.stamp);
+
+    //iterate over the cells' probabilities
+    for(float z = minZ;z<maxZ;z+=resolution){
+        for(float y = minY;y<maxY;y+=resolution){
+            for(float x = minX;x<maxX;x+=resolution){
+
+                if(z >= roi_minz && z <= roi_maxz)
+                {
+                    if(y >= roi_miny[req.roi] && y <= roi_maxy[req.roi])
+                    {
+                        if(x >= roi_minx[req.roi] && x <= roi_maxx[req.roi])
+                        {
+
+                            if (req.type == 0) estimate = grid->retrieve(cnt);			//short-term memory grid
+                            if (req.type == 1) estimate = grid->estimate(cnt,0);			//long-term memory grid
+                            if (req.type == 2) estimate = grid->aux[cnt];				//auxiliary grid
+                            if (req.type == 3) estimate = grid->getDominant(cnt,req.period);	//dominant frequency amplitude
+
+                            //write to file:
+                            fprintf(f, "%f\n", estimate);
+
+                            if(estimate > minP && estimate < maxP)
+                            {
+                                if(req.set_color == 0)
+                                {
+                                    m_color.r = 0.0;
+                                    m_color.b = z/maxZ;
+                                    m_color.g = 1.0 - m_color.b;
+                                    m_color.a = 0.8;
+                                }
+                                cubeCenter.x = x;
+                                cubeCenter.y = y;
+                                cubeCenter.z = z;
+                                markers.points.push_back(cubeCenter);
+                                markers.colors.push_back(m_color);
+                                cells++;
+                            }
+                        }
+                    }
+                }
+                cnt++;
+
+            }
+        }
+    }
+
+    //publish results
+    retrieve_publisher.publish(markers);
+    res.number = cells;
+    fclose(f);
+    return true;
+}
+
 
 bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiotemporalexploration::Visualize::Response &res)
 {
-	//init visualization markers:
-	visualization_msgs::Marker markers;
-	geometry_msgs::Point cubeCenter;
+    //init visualization markers:
+    visualization_msgs::Marker markers;
+    geometry_msgs::Point cubeCenter;
 
-	/// set color
-	std_msgs::ColorRGBA m_color;
-	m_color.r = req.red;
-	m_color.g = req.green;
-	m_color.b = req.blue;
-	m_color.a = req.alpha;
-	markers.color = m_color;
+    /// set color
+    std_msgs::ColorRGBA m_color;
+    m_color.r = req.red;
+    m_color.g = req.green;
+    m_color.b = req.blue;
+    m_color.a = req.alpha;
+    markers.color = m_color;
 
-	/// set type, frame and size 
-	markers.header.frame_id = "/map";
-	markers.header.stamp = ros::Time::now();
-	markers.ns = req.name;
-	markers.action = visualization_msgs::Marker::ADD;
-	markers.type = visualization_msgs::Marker::CUBE_LIST;
-	markers.scale.x = RESOLUTION;
-	markers.scale.y = RESOLUTION;
-	markers.scale.z = RESOLUTION;
-	markers.points.clear();
+    /// set type, frame and size
+    markers.header.frame_id = "/map";
+    markers.header.stamp = ros::Time::now();
+    markers.ns = req.name;
+    markers.action = visualization_msgs::Marker::ADD;
+    markers.type = visualization_msgs::Marker::CUBE_LIST;
+    markers.scale.x = RESOLUTION;
+    markers.scale.y = RESOLUTION;
+    markers.scale.z = RESOLUTION;
+    markers.points.clear();
 
-	// prepare to iterate over the entire grid 
-	float resolution = grid->resolution; 
-	float minX = grid->oX;
-	float minY = grid->oY;
-	float minZ = grid->oZ;
-	float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
-	float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
-	float maxZ = 2.1;//minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
-	int cnt = 0;
-	int cells = 0;
-	float estimate,minP,maxP;
-	minP = req.minProbability;
-	maxP = req.maxProbability;
-	if (req.stamp != 0 && req.type == 1) grid->recalculate(req.stamp);
+    // prepare to iterate over the entire grid
+    float resolution = grid->resolution;
+    float minX = grid->oX;
+    float minY = grid->oY;
+    float minZ = grid->oZ;
+    float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
+    float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
+    float maxZ = 2.1;//minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
+    int cnt = 0;
+    int cells = 0;
+    float estimate,minP,maxP;
+    minP = req.minProbability;
+    maxP = req.maxProbability;
+    if (req.stamp != 0 && req.type == 1) grid->recalculate(req.stamp);
 
-	//iterate over the cells' probabilities 
-	for(float z = minZ;z<maxZ;z+=resolution){
-		for(float y = minY;y<maxY;y+=resolution){
-			for(float x = minX;x<maxX;x+=resolution){
-				if (req.type == 0) estimate = grid->retrieve(cnt);			//short-term memory grid
-				if (req.type == 1) estimate = grid->estimate(cnt,0);			//long-term memory grid
-				if (req.type == 2) estimate = grid->aux[cnt];				//auxiliary grid
-				if (req.type == 3) estimate = grid->getDominant(cnt,req.period);	//dominant frequency amplitude
-				
-				if(estimate > minP && estimate < maxP)
-				{
-					if(req.set_color == 0)
-					{
-						m_color.r = 0.0;
-						m_color.b = z/maxZ;
-						m_color.g = 1.0 - m_color.b;
-						m_color.a = 0.8;
-					}
-					cubeCenter.x = x;
-					cubeCenter.y = y;
-					cubeCenter.z = z;
-					markers.points.push_back(cubeCenter);
-					markers.colors.push_back(m_color);
-					cells++;
-				}
-				cnt++;
-			}
-		}
-	}
+    //iterate over the cells' probabilities
+    for(float z = minZ;z<maxZ;z+=resolution){
+        for(float y = minY;y<maxY;y+=resolution){
+            for(float x = minX;x<maxX;x+=resolution){
+                if (req.type == 0) estimate = grid->retrieve(cnt);			//short-term memory grid
+                if (req.type == 1) estimate = grid->estimate(cnt,0);			//long-term memory grid
+                if (req.type == 2) estimate = grid->aux[cnt];				//auxiliary grid
+                if (req.type == 3) estimate = grid->getDominant(cnt,req.period);	//dominant frequency amplitude
 
-	//publish results 
-	retrieve_publisher.publish(markers);
-	res.number = cells;
-	return true;
+                if(estimate > minP && estimate < maxP)
+                {
+                    if(req.set_color == 0)
+                    {
+                        m_color.r = 0.0;
+                        m_color.b = z/maxZ;
+                        m_color.g = 1.0 - m_color.b;
+                        m_color.a = 0.8;
+                    }
+                    cubeCenter.x = x;
+                    cubeCenter.y = y;
+                    cubeCenter.z = z;
+                    markers.points.push_back(cubeCenter);
+                    markers.colors.push_back(m_color);
+                    cells++;
+                }
+                cnt++;
+            }
+        }
+    }
+
+    //publish results
+    retrieve_publisher.publish(markers);
+    res.number = cells;
+    return true;
 }
-
 
 void imageCallbacak(const sensor_msgs::ImageConstPtr& msg)
 {
-	float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
-	//if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
+    float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
+    //if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
 
-	//Disabled code does some filtration
-	/*if (integrateMeasurements < 20 && integrateMeasurements > 0)
-	{
-		float di = 0;
-		 if (integrateMeasurements == 15){
-			 memset(measures,0,sizeof(int)*307200);
-			 memset(dept,0,sizeof(float)*307200);
-			 for (int i = 0;i<307200;i++) dept[i] = CAMERA_RANGE*2;
-	         }
-		 for (int i = 0;i<307200;i++){
-			 di = (msg->data[i*2]+256*msg->data[i*2+1])/1000.0; 
-			 if (isnormal(di) != 0 && di > 0.15) {
-				if (di < dept[i]) dept[i] = di;
-			 }
-		 }
-		 integrateMeasurements--;
-	}*/
-	int len =  msg->height*msg->width;
-	/*float vx = 1/570.0; 
-	float vy = 1/570.0; 
-	float cx = -320.5;
-	float cy = -240.5;*/
-	float vx = 1/570.34; 
-	float vy = 1/570.34; 
-	float cx = -314.5;
-	float cy = -235.5;
-	int width = msg->width;
-	int height = msg->height;
-	float fx = (1+cx)*vx;
-	float fy = (1+cy)*vy;
-	float lx = (width+cx)*vx;
-	float ly = (height+cy)*vy;
-	float x[len+1];
-	float y[len+1];
-	float z[len+1];
-	float d[len+1];
-	float di,psi,phi,phiPtu,psiPtu,xPtu,yPtu,zPtu,ix,iy,iz;
-	int cnt = 0;
-	di=psi=phi=phiPtu=psiPtu=xPtu=yPtu=zPtu=0;
-	if (integrateMeasurements == 3)
-	{
-		integrateMeasurements=0;
-		tf::StampedTransform st;
-		try {
-			tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
-			tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp,st);
-		}
-		catch (tf::TransformException ex) {
-			ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
-			return;
-		}
-		CTimer timer;
-		timer.reset();
-		timer.start();
-		x[len] = xPtu = st.getOrigin().x();
-		y[len] = yPtu = st.getOrigin().y();
-		z[len] = zPtu = st.getOrigin().z();
-		double a,b,c;	
-		tf::Matrix3x3  rot = st.getBasis();
-		rot.getEulerYPR(a,b,c,1);
-		printf("%.3f %.3f %.3f\n",a,b,c);
-		psi = -M_PI/2-c;
-		phi = a-c-psi;
-		for (float h = fy;h<ly;h+=vy)
-		{
-			for (float w = fx;w<lx;w+=vx)
-			{
-				di = (msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0; 
-				d[cnt] = 1;
-				if (di < 0.05 || di >= CAMERA_RANGE){
-					di = CAMERA_RANGE;
-					d[cnt] = 0;
-				}
-				ix = di*(cos(psi)-sin(psi)*h);
-				iy = -w*di;
-				iz = -di*(sin(psi)+cos(psi)*h);
-				x[cnt] = cos(phi)*ix-sin(phi)*iy+xPtu;
-				y[cnt] = sin(phi)*ix+cos(phi)*iy+yPtu;
-				z[cnt] = iz+zPtu;
-				cnt++;	
-			}
-		}
-		int lastInfo = grid->obtainedInformationLast;
-		printf("Depth image to point cloud took %i ms,",timer.getTime());
-		grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
-		//grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformationLast-lastInfo);	
-		//printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
-	}
+    //Disabled code does some filtration
+    /*if (integrateMeasurements < 20 && integrateMeasurements > 0)
+    {
+        float di = 0;
+         if (integrateMeasurements == 15){
+             memset(measures,0,sizeof(int)*307200);
+             memset(dept,0,sizeof(float)*307200);
+             for (int i = 0;i<307200;i++) dept[i] = CAMERA_RANGE*2;
+             }
+         for (int i = 0;i<307200;i++){
+             di = (msg->data[i*2]+256*msg->data[i*2+1])/1000.0;
+             if (isnormal(di) != 0 && di > 0.15) {
+                if (di < dept[i]) dept[i] = di;
+             }
+         }
+         integrateMeasurements--;
+    }*/
+    int len =  msg->height*msg->width;
+    /*float vx = 1/570.0;
+    float vy = 1/570.0;
+    float cx = -320.5;
+    float cy = -240.5;*/
+    float vx = 1/570.34;
+    float vy = 1/570.34;
+    float cx = -314.5;
+    float cy = -235.5;
+    int width = msg->width;
+    int height = msg->height;
+    float fx = (1+cx)*vx;
+    float fy = (1+cy)*vy;
+    float lx = (width+cx)*vx;
+    float ly = (height+cy)*vy;
+    float x[len+1];
+    float y[len+1];
+    float z[len+1];
+    float d[len+1];
+    float di,psi,phi,phiPtu,psiPtu,xPtu,yPtu,zPtu,ix,iy,iz;
+    int cnt = 0;
+    di=psi=phi=phiPtu=psiPtu=xPtu=yPtu=zPtu=0;
+    if (integrateMeasurements == 3)
+    {
+        integrateMeasurements=0;
+        tf::StampedTransform st;
+        try {
+            tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
+            tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp,st);
+        }
+        catch (tf::TransformException ex) {
+            ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
+            return;
+        }
+        CTimer timer;
+        timer.reset();
+        timer.start();
+        x[len] = xPtu = st.getOrigin().x();
+        y[len] = yPtu = st.getOrigin().y();
+        z[len] = zPtu = st.getOrigin().z();
+        double a,b,c;
+        tf::Matrix3x3  rot = st.getBasis();
+        rot.getEulerYPR(a,b,c,1);
+        printf("%.3f %.3f %.3f\n",a,b,c);
+        psi = -M_PI/2-c;
+        phi = a-c-psi;
+        for (float h = fy;h<ly;h+=vy)
+        {
+            for (float w = fx;w<lx;w+=vx)
+            {
+                di = (msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0;
+                d[cnt] = 1;
+                if (di < 0.05 || di >= CAMERA_RANGE){
+                    di = CAMERA_RANGE;
+                    d[cnt] = 0;
+                }
+                ix = di*(cos(psi)-sin(psi)*h);
+                iy = -w*di;
+                iz = -di*(sin(psi)+cos(psi)*h);
+                x[cnt] = cos(phi)*ix-sin(phi)*iy+xPtu;
+                y[cnt] = sin(phi)*ix+cos(phi)*iy+yPtu;
+                z[cnt] = iz+zPtu;
+                cnt++;
+            }
+        }
+        int lastInfo = grid->obtainedInformationLast;
+        printf("Depth image to point cloud took %i ms,",timer.getTime());
+        grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
+        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+        printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformationLast-lastInfo);
+        //printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
+    }
 }
 
 int main(int argc,char *argv[])
@@ -511,7 +620,7 @@ int main(int argc,char *argv[])
     n.setParam("/fremenGrid/resolution",RESOLUTION);
 
     tf_listener    = new tf::TransformListener();
-    image_transport::ImageTransport imageTransporter(n); 
+    image_transport::ImageTransport imageTransporter(n);
 
     ros::Time now = ros::Time(0);
     tf_listener->waitForTransform("/head_xtion_depth_optical_frame","/map",now, ros::Duration(3.0));
@@ -525,8 +634,9 @@ int main(int argc,char *argv[])
 
     //Services:
     ros::ServiceServer retrieve_service = n.advertiseService("/fremenGrid/visualize", visualizeGrid);
+    ros::ServiceServer roi_service = n.advertiseService("/fremenGrid/roi", visualizeRoi);
     ros::ServiceServer information_gain = n.advertiseService("/fremenGrid/entropy", estimateEntropy);
-//    ros::ServiceServer add_service = n.advertiseService("/fremenGrid/measure", addView);
+    //    ros::ServiceServer add_service = n.advertiseService("/fremenGrid/measure", addView);
     ros::ServiceServer depth_service = n.advertiseService("/fremenGrid/depth", addDepth);
     ros::ServiceServer save_service = n.advertiseService("/fremenGrid/save", saveGrid);
     ros::ServiceServer load_service = n.advertiseService("/fremenGrid/load", loadGrid);

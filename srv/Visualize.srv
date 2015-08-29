@@ -9,5 +9,7 @@ float32 blue
 float32 alpha 
 int32 type 
 string name
+int32 roi
+string filename
 ---
 int32 number
