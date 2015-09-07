@@ -539,7 +539,7 @@ bool CFremenGrid::load(const char* filename)
 	ret = fread(&oZ,sizeof(float),1,f);
 	ret = fread(&resolution,sizeof(float),1,f);
 	ret = fread(&obtainedInformationLast,sizeof(float),1,f);
-	ret = fread(&obtainedInformationPredicted,sizeof(float),1,f);
+    //ret = fread(&obtainedInformationPredicted,sizeof(float),1,f);
 	numCells = xDim*yDim*zDim;
 	ret = fread(probs,sizeof(float),numCells,f);
 	for (int i=0;i<numCells;i++) frelements[i].load(f);

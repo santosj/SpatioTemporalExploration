@@ -104,9 +104,11 @@ int integrateMeasurements = 0;
 int maxMeasurements = 15;
 int measurements = maxMeasurements;
 float *dept;
+bool first_grid = true;
 
 
 CFremenGrid *grid;
+float *old_grid;
 tf::TransformListener *tf_listener;
 
 ros::Publisher *octomap_pub_ptr, *estimate_pub_ptr,*clock_pub_ptr;
@@ -231,9 +233,57 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
+
     grid->load(req.filename.c_str());
     ROS_INFO("3D Grid of %ix%ix%i loaded with %i/%i static cells!",grid->xDim,grid->yDim,grid->zDim,grid->numStatic(),grid->numCells);
     res.result = true;
+
+    return true;
+}
+
+bool loadcompareGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
+{
+    int changes = 0;
+
+    if(first_grid&&false)
+    {
+        ROS_INFO("first grid");
+        grid->load(req.filename.c_str());
+        ROS_INFO("3D Grid of %ix%ix%i loaded with %i/%i static cells!",grid->xDim,grid->yDim,grid->zDim,grid->numStatic(),grid->numCells);
+        first_grid = false;
+    }
+    else
+    {
+        ROS_INFO("next grid %ld",sizeof(grid));
+        //old_grid = grid;
+        memcpy(old_grid, grid->probs, sizeof(float)*DIM_X*DIM_Y*DIM_Z);
+        grid->load(req.filename.c_str());
+
+        int cnt = 0;
+        bool estimate, old_estimate;
+
+        float resolution = grid->resolution;
+        float minX = grid->oX;
+        float minY = grid->oY;
+        float minZ = grid->oZ;
+        float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
+        float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
+        float maxZ = 2.1;
+
+        for (int cnt = 0;cnt<DIM_X*DIM_Y*DIM_Z;cnt++)
+        {
+            if(grid->probs[cnt] >= 0.5) estimate = 1; else estimate = 0;
+            if(old_grid[cnt] >= 0.5) old_estimate = 1; else old_estimate = 0;
+            if(estimate != old_estimate) changes++;
+        }
+
+    }
+
+    ROS_INFO("total changes: %d", changes);
+
+    res.result = true;
+    res.changes = changes;
+
     return true;
 }
 
@@ -609,6 +659,8 @@ int main(int argc,char *argv[])
     ros::init(argc, argv, "fremengrid");
     ros::NodeHandle n;
     grid = new CFremenGrid(MIN_X,MIN_Y,MIN_Z,DIM_X,DIM_Y,DIM_Z,RESOLUTION);
+    old_grid = (float*)malloc(DIM_X*DIM_Y*DIM_Z*sizeof(float));
+    for (int i = 0;i<DIM_X*DIM_Y*DIM_Z;i++)old_grid[i] = 0.5;
     dept = (float*)malloc(sizeof(float)*307200*(maxMeasurements+1));
 
     n.setParam("/fremenGrid/minX",MIN_X);
@@ -640,6 +692,7 @@ int main(int argc,char *argv[])
     ros::ServiceServer depth_service = n.advertiseService("/fremenGrid/depth", addDepth);
     ros::ServiceServer save_service = n.advertiseService("/fremenGrid/save", saveGrid);
     ros::ServiceServer load_service = n.advertiseService("/fremenGrid/load", loadGrid);
+    ros::ServiceServer loadcompare_service = n.advertiseService("/fremenGrid/loadcompare", loadcompareGrid);
 
     ros::spin();
     delete tf_listener;

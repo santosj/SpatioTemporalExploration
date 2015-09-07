@@ -5,3 +5,4 @@ bool lossy
 ---
 int64 size
 bool result
+int32 changes
