@@ -21,7 +21,16 @@
 #include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
-#define WW
+#define WW_MORSE
+
+#ifdef WW_MORSE
+#define MIN_X  -15.6
+#define MIN_Y  -5.9
+#define MIN_Z  -0.0
+#define DIM_X 164
+#define DIM_Y 120
+#define DIM_Z 30
+#endif
 
 #ifdef WW
 #define MIN_X  -15.5
@@ -86,7 +95,7 @@
 #define DIM_Z 60
 #endif
 
-#define CAMERA_RANGE 4.0
+#define CAMERA_RANGE 5.0
 
 #define RESOLUTION 0.1
 
@@ -101,7 +110,7 @@ float roi_maxz = 1.6;
 
 bool debug = false;
 int integrateMeasurements = 0;
-int maxMeasurements = 15;
+int maxMeasurements = 1;//15;
 int measurements = maxMeasurements;
 float *dept;
 bool first_grid = true;
@@ -207,7 +216,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
                 medinda = cnt*(maxMeasurements+1);
                 di = dept[medinda+(maxMeasurements+1)/2];//(msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0;
                 d[cnt] = 1;
-                if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
+                if (di < 0.05 || di >= CAMERA_RANGE)// || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
                 {
                     di = 0;//CAMERA_RANGE;
                     d[cnt] = 0;
