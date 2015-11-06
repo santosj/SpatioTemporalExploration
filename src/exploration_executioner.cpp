@@ -2,6 +2,7 @@
 #include <tf/transform_listener.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Twist.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -45,7 +46,7 @@ typedef actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> Pla
 actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> *ac_nav_ptr;
 actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> *ac_plan_ptr;
 
-ros::Publisher *reach_pub_ptr;
+ros::Publisher *reach_pub_ptr, *vel_pub_ptr;
 
 geometry_msgs::Pose current_pose, previous_pose;
 
@@ -83,7 +84,7 @@ void ptuCallback(const sensor_msgs::JointState::ConstPtr &msg)
         if (msg->name[i] == "pan") pan = msg->position[i];
         if (msg->name[i] == "tilt") tilt = msg->position[i];
     }
-    //printf("PTU: %.3f %.3f %i\n",pan,tilt,ptuMovementFinished);
+//    printf("PTU: %.3f %.3f %.3f %.3f %i\n",ptu.position[0],ptu.position[1],pan,tilt,ptuMovementFinished);
     if (fabs(pan-ptu.position[0])<0.01 && fabs(tilt-ptu.position[1])<0.01) ptuMovementFinished++;
 }
 
@@ -128,21 +129,20 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     ROS_INFO("The plan received has %d locations to visit.", n);
 
+
     if(robot_charging)//if the robot is charging then undock!!!
     {
-        ROS_INFO("Robot charging!");
-        ROS_INFO("Undocking...");
+        ROS_INFO("Robot in the charging dock!");
+        ROS_INFO("Moving backwards...");
 
-        //Undocking
-        current_goal.action_server = "undocking";
-        current_goal.target_pose.header.frame_id = "map";
-        ac_nav_ptr->sendGoal(current_goal);
-        ac_nav_ptr->waitForResult(ros::Duration(0.0));
-
-        if (ac_nav_ptr->getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-            ROS_INFO("Robot undocked... Executing received plan!");
+        geometry_msgs::Twist vel_msg;
+        vel_msg.linear.x = -0.55;
+        for(int v = 0; v < 10; v++)
+        {
+            vel_pub_ptr->publish(vel_msg);
+            sleep(0.2);
+        }
     }
-
     previous_pose.position.x  = 1.0;
     previous_pose.position.y = 0.0;
 
@@ -160,7 +160,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     //PTU initial position
     movePtu(0.0,0.0);
 
-    sleep(1000000);
+    sleep(1);
 
     //For each point in the plan the robot calls move base and takes measurements
     while (i < n)
@@ -189,7 +189,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
                 point = 0;
 
-		movePtu(pan[0],tilt[0]);
+                movePtu(pan[0],tilt[0]);
                 ros::spinOnce();
                 while (ros::ok() && point < numPoints)
                 {
@@ -256,12 +256,12 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 execution_result.last.position.x = -1.0;
                 execution_result.last.position.y = 0.0;
                 //Docking
-                current_goal.action_server = "docking";
-                current_goal.target_pose.header.frame_id = "map";
-                ac_nav_ptr->sendGoal(current_goal);
-                ac_nav_ptr->waitForResult(ros::Duration(0.0));
-                if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
-                    ROS_ERROR("docking failed!");
+//                current_goal.action_server = "docking";
+//                current_goal.target_pose.header.frame_id = "map";
+//                ac_nav_ptr->sendGoal(current_goal);
+//                ac_nav_ptr->waitForResult(ros::Duration(0.0));
+//                if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
+//                    ROS_ERROR("docking failed!");
 
                 //reach_pub_ptr->publish(reachable_points);
                 //as->setSucceeded(execution_result);
@@ -424,6 +424,9 @@ int main(int argc,char *argv[])
     //Publishers
     ros::Publisher reach_pub = nh.advertise<spatiotemporalexploration::Reachable>("/reachable_points", 10);
     reach_pub_ptr = &reach_pub;
+
+    ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel",10);
+    vel_pub_ptr = &vel_pub;
 
     //Subscribers
     ros::Subscriber ptu_sub = n.subscribe("/ptu/state", 10, ptuCallback);

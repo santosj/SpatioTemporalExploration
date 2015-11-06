@@ -69,7 +69,6 @@ int main(int argc,char *argv[])
 
 	ros::NodeHandle nh("~");
 
-	ROS_INFO("Starting scheduler...");
 	ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
 
 	ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
@@ -117,6 +116,7 @@ int main(int argc,char *argv[])
 			plans[position] = 1;
 			timeStamps[position] = currentTime.sec;
 		}
+
 		time_t timeNow;
 		time(&timeNow);
 		char timeStr[100];
@@ -294,17 +294,6 @@ int main(int argc,char *argv[])
 							final_pose.position.x = -1.0;
 							final_pose.position.y = 0.0;
 
-
-							if(ac_nav.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-							{
-
-								ac_nav.waitForResult(ros::Duration(0.0));
-								goal.action_server = "docking";
-								goal.target_pose.header.frame_id = "map";
-								ac_nav.sendGoal(goal);
-							}
-							else
-								ROS_INFO("failed fo dock!");
 
 						}
 					}
