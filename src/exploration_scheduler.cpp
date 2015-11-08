@@ -89,7 +89,7 @@ int main(int argc,char *argv[])
     ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 1000);
     geometry_msgs::PoseWithCovarianceStamped pose_msg;
     pose_msg.header.frame_id = "map";
-    pose_msg.pose.pose.position.x = -1.0;
+    pose_msg.pose.pose.position.x = 0.0;
     pose_msg.pose.pose.orientation.w = 1.0;
 
 	ExecutionClient ac_execution("executioner", true);
