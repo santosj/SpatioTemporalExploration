@@ -8,6 +8,14 @@
 #include <scitos_msgs/BatteryState.h>
 #include <signal.h>
 
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+
 static volatile bool stop = false;
 
 void intHandler(int dummy) 
@@ -85,6 +93,45 @@ int main(int argc,char *argv[])
 	spatiotemporalexploration::PlanGoal plan_goal;
 	spatiotemporalexploration::ExecutionGoal exec_goal;
 
+
+    int sockfd, portno, nn;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+
+    char buffer[256];
+
+    portno = 36345;
+
+    /* Create a socket point */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        ROS_ERROR("ERROR opening socket");
+        exit(1);
+    }
+
+    server = gethostbyname("localhost");
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host\n");
+        exit(0);
+    }
+
+    sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[1.0, 0.0, 0.1, 0.0]\"]\n", 10.2, 7.1);
+
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr,
+          (char *)&serv_addr.sin_addr.s_addr,
+          server->h_length);
+    serv_addr.sin_port = htons(portno);
+
+    /* Now connect to the server */
+    if(connect(sockfd, (struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)
+    {
+        ROS_ERROR("ERROR connecting");
+        exit(1);
+    }
+
 	int remaining_time;
 	int init_time;
 	int slot_duration = timeStamps[1] - timeStamps[0];
@@ -141,7 +188,7 @@ int main(int argc,char *argv[])
 
 
 			//asks for a plan
-			plan_goal.max_loc = 6; //number ao local maximas
+            plan_goal.max_loc = 6; //number of local maximas
 			if (plans[position] == 2) plan_goal.t = 0;
 			if (plans[position] == 1) plan_goal.t = timeStamps[position];
 			plan_goal.first = initial_pose;
@@ -311,3 +358,20 @@ int main(int argc,char *argv[])
 	} while (ros::ok() && runOnce == false && stop == false);
 	return 0;
 }
+
+
+///* Send message to the server */
+//n = write(sockfd,buffer,strlen(buffer));
+//if (n < 0)
+//{
+//    ROS_ERROR("ERROR writing to socket");
+//    exit(1);
+//}
+///* Now read server response */
+//bzero(buffer,256);
+//n = read(sockfd,buffer,255);
+//if (n < 0)
+//{
+//    ROS_ERROR("ERROR reading from socket");
+//    exit(1);
+//}

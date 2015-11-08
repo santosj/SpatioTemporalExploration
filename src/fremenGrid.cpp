@@ -216,7 +216,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
                 medinda = cnt*(maxMeasurements+1);
                 di = dept[medinda+(maxMeasurements+1)/2];//(msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0;
                 d[cnt] = 1;
-                if (di < 0.05 || di >= CAMERA_RANGE)// || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
+                if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
                 {
                     di = 0;//CAMERA_RANGE;
                     d[cnt] = 0;

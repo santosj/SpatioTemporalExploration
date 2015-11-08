@@ -5,19 +5,18 @@ SESSION=$USER
 tmux -2 new-session -d -s $SESSION
 # Setup a window for tailing log files
 tmux new-window -t $SESSION:0 -n 'roscore'
-tmux new-window -t $SESSION:1 -n 'core'
+tmux new-window -t $SESSION:1 -n 'mongodb'
 tmux new-window -t $SESSION:2 -n 'simulation'
 tmux new-window -t $SESSION:3 -n '2d_nav'
 tmux new-window -t $SESSION:4 -n 'cameras'
 tmux new-window -t $SESSION:5 -n 'strands_ui'
 tmux new-window -t $SESSION:6 -n 'backtrack_behaviour'
-tmux new-window -t $SESSION:7 -n 'docking'
-tmux new-window -t $SESSION:8 -n 'topo_nav'
-tmux new-window -t $SESSION:9 -n 'fremen'
-tmux new-window -t $SESSION:10 -n 'planner'
-tmux new-window -t $SESSION:11 -n 'executioner'
-tmux new-window -t $SESSION:12 -n 'scheduler'
-tmux new-window -t $SESSION:13 -n 'scheduler_creator'
+tmux new-window -t $SESSION:7 -n 'topo_nav'
+tmux new-window -t $SESSION:8 -n 'fremen'
+tmux new-window -t $SESSION:9 -n 'planner'
+tmux new-window -t $SESSION:10 -n 'executioner'
+tmux new-window -t $SESSION:11 -n 'scheduler'
+tmux new-window -t $SESSION:12 -n 'scheduler_creator'
 
 
 tmux select-window -t $SESSION:0
@@ -47,24 +46,21 @@ tmux select-window -t $SESSION:6
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 roslaunch backtrack_behaviour backtrack.launch"
 
 tmux select-window -t $SESSION:7
-tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 roslaunch scitos_docking charging.launch"
-
-tmux select-window -t $SESSION:8
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 roslaunch topological_navigation topological_navigation_empty_map.launch map:=empty_map mon_nav_config_file:=$(rospack find strands_recovery_behaviours)/config/monitored_nav_config.yaml"
 
-tmux select-window -t $SESSION:9
+tmux select-window -t $SESSION:8
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration fremengrid"
 
-tmux select-window -t $SESSION:10
+tmux select-window -t $SESSION:9
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration planner.launch"
 
-tmux select-window -t $SESSION:11
+tmux select-window -t $SESSION:10
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration executioner.launch"
 
-tmux select-window -t $SESSION:12
+tmux select-window -t $SESSION:11
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_scheduler"
 
-tmux select-window -t $SESSION:13
+tmux select-window -t $SESSION:12
 tmux send-keys "source ~/simulation_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_schedule_creator"
 
 # Set default window
