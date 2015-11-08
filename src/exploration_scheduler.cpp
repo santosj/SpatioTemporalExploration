@@ -5,6 +5,7 @@
 #include <spatiotemporalexploration/PlanAction.h>
 #include <spatiotemporalexploration/SaveLoad.h>
 #include <strands_navigation_msgs/MonitoredNavigationAction.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <scitos_msgs/BatteryState.h>
 #include <signal.h>
 
@@ -17,6 +18,7 @@
 
 
 static volatile bool stop = false;
+int portno = 4000;
 
 void intHandler(int dummy) 
 { 
@@ -70,16 +72,25 @@ void loadPlan(const char* name)
 
 int main(int argc,char *argv[])
 {
-	if (argc == 1)	runOnce = true;
-	if (runOnce) ROS_INFO("Exploration scheduler: No schedule received starting at once."); else loadPlan(argv[1]);
+    if (argc == 1)	runOnce = true;
+    if (runOnce) ROS_INFO("Exploration scheduler: No schedule received starting at once."); else loadPlan(argv[1]);
+
+
 	ros::init(argc, argv, "exploration_scheduler");
 	ros::NodeHandle n;
 
 	ros::NodeHandle nh("~");
 
+
 	ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
 
 	ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
+
+    ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 1000);
+    geometry_msgs::PoseWithCovarianceStamped pose_msg;
+    pose_msg.header.frame_id = "map";
+    pose_msg.pose.pose.position.x = -1.0;
+    pose_msg.pose.pose.orientation.w = 1.0;
 
 	ExecutionClient ac_execution("executioner", true);
 	ac_execution.waitForServer();
@@ -94,13 +105,12 @@ int main(int argc,char *argv[])
 	spatiotemporalexploration::ExecutionGoal exec_goal;
 
 
-    int sockfd, portno, nn;
+    int sockfd, nn;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
     char buffer[256];
 
-    portno = 36345;
 
     /* Create a socket point */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -116,7 +126,8 @@ int main(int argc,char *argv[])
         exit(0);
     }
 
-    sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[1.0, 0.0, 0.1, 0.0]\"]\n", 10.2, 7.1);
+    sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[0.0, 0.0, 0.0, 0.0]\"]\n", 10.2, 7.1);
+    ROS_INFO("%s", buffer);
 
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -231,6 +242,29 @@ int main(int argc,char *argv[])
 						plan_goal.first = initial_pose;
 						plan_goal.last = final_pose;
 
+
+                        /* Send message to the server */
+                        nn = write(sockfd,buffer,strlen(buffer));
+                        if (nn < 0)
+                        {
+                            ROS_ERROR("ERROR writing to socket");
+                            //exit(1);
+                        }
+                        else{
+                            ROS_INFO("Robot teleported to the charging station!");
+                            pose_msg.header.stamp = ros::Time::now();
+                            pose_pub.publish(pose_msg);
+                        }
+
+                        /* Now read server response */
+                        bzero(buffer,256);
+                        nn = read(sockfd,buffer,255);
+                        if (nn < 0)
+                        {
+                            ROS_ERROR("ERROR reading from socket");
+                            //exit(1);
+                        }
+
 					}
 					else
 					{
@@ -242,7 +276,7 @@ int main(int argc,char *argv[])
 
 						bool plan_complete = ac_execution.getResult()->success;
 
-						while(remaining_time > 180 && !plan_complete && ros::ok())//3 min (dynamic reconfigure)
+                        while(remaining_time > 180 && !plan_complete && ros::ok())//3 min (TODO -> dynamic reconfigure)
 						{
 
 							remaining_time = slot_duration - (ros::Time::now().sec - init_time);
@@ -293,6 +327,33 @@ int main(int argc,char *argv[])
 										initial_pose.position.y = 0.0;
 										final_pose.position.x = -1.0;
 										final_pose.position.y = 0.0;
+                                        ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
+                                        plan_goal.first = initial_pose;
+                                        plan_goal.last = final_pose;
+
+
+                                        /* Send message to the server */
+                                        nn = write(sockfd,buffer,strlen(buffer));
+                                        if (nn < 0)
+                                        {
+                                            ROS_ERROR("ERROR writing to socket");
+                                            //exit(1);
+                                        }
+                                        else{
+                                            ROS_INFO("Robot teleported to the charging station!");
+                                            pose_msg.header.stamp = ros::Time::now();
+                                            pose_pub.publish(pose_msg);
+                                        }
+
+                                        /* Now read server response */
+                                        bzero(buffer,256);
+                                        nn = read(sockfd,buffer,255);
+                                        if (nn< 0)
+                                        {
+                                            ROS_ERROR("ERROR reading from socket");
+                                            //exit(1);
+                                        }
+
 										break;
 									}
 									else
@@ -341,6 +402,36 @@ int main(int argc,char *argv[])
 							final_pose.position.x = -1.0;
 							final_pose.position.y = 0.0;
 
+                            ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
+                            plan_goal.first = initial_pose;
+                            plan_goal.last = final_pose;
+
+
+                            ac_nav.waitForResult(ros::Duration(20.0));
+
+
+                            /* Send message to the server */
+                            nn = write(sockfd,buffer,strlen(buffer));
+                            if (nn < 0)
+                            {
+                                ROS_ERROR("ERROR writing to socket");
+                                //exit(1);
+                            }
+                            else{
+                                ROS_INFO("Robot teleported to the charging station!");
+                                pose_msg.header.stamp = ros::Time::now();
+                                pose_pub.publish(pose_msg);
+                            }
+
+                            /* Now read server response */
+                            bzero(buffer,256);
+                            nn = read(sockfd,buffer,255);
+                            if (nn < 0)
+                            {
+                                ROS_ERROR("ERROR reading from socket");
+                                //exit(1);
+                            }
+
 
 						}
 					}
@@ -360,18 +451,3 @@ int main(int argc,char *argv[])
 }
 
 
-///* Send message to the server */
-//n = write(sockfd,buffer,strlen(buffer));
-//if (n < 0)
-//{
-//    ROS_ERROR("ERROR writing to socket");
-//    exit(1);
-//}
-///* Now read server response */
-//bzero(buffer,256);
-//n = read(sockfd,buffer,255);
-//if (n < 0)
-//{
-//    ROS_ERROR("ERROR reading from socket");
-//    exit(1);
-//}

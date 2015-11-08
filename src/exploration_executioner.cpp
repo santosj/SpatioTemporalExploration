@@ -108,6 +108,14 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
     ros::service::call("/move_base/DWAPlannerROS/set_parameters", srv_req, srv_resp);
 
+//    double_param.name = "sim_time";
+//    double_param.value = 0.2;
+//    conf.doubles.push_back(double_param);
+
+//    srv_req.config = conf;
+
+//    ros::service::call("/move_base/DWAPlannerROS/set_parameters", srv_req, srv_resp);
+
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;  //move base goal
     spatiotemporalexploration::ExecutionFeedback feedback;          //action feedback
     spatiotemporalexploration::ExecutionResult execution_result;    //action result
