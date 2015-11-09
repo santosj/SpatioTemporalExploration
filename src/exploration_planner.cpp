@@ -39,6 +39,8 @@ typedef struct
 }
 maxima;
 
+const char *directory = "/home/linda/tomtests/";
+
 int numCellsX, numCellsY;
 
 float *reachability_grid_ptr;
@@ -256,14 +258,14 @@ void reachableCallback(const spatiotemporalexploration::Reachable::ConstPtr &msg
     if(msg->replan)
     {
         ROS_INFO("REPLAN!!!");
-        sprintf(fileName,"/localhome/strands/3dmaps/reachability-%s-replan.grid",timeStr);
-        sprintf(fileName2,"/localhome/strands/3dmaps/positions-%s-replan.txt",timeStr);
+        sprintf(fileName,"%s/3dmaps/reachability-%s-replan.grid",directory,timeStr);
+        sprintf(fileName2,"%s/3dmaps/positions-%s-replan.txt",directory,timeStr);
     }
     else
     {
         ROS_INFO("NORMAL PLAN!!!");
-        printf(fileName,"/localhome/strands/3dmaps/reachability-%s.grid",timeStr);
-        printf(fileName2,"/localhome/strands/3dmaps/positions-%s.txt",timeStr);
+        printf(fileName,"%s/3dmaps/reachability-%s.grid",directory,timeStr);
+        printf(fileName2,"%s/3dmaps/positions-%s.txt",directory,timeStr);
     }
 
 
