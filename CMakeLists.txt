@@ -27,6 +27,7 @@ add_action_files(
 	FILES 
 	Plan.action 
 	Execution.action
+	Scene.action
 )
 
 generate_messages(
@@ -48,6 +49,7 @@ add_executable(frontier_exploration src/frontier_exploration.cpp)
 add_executable(analysegrid src/analyseGrid.cpp)
 add_executable(exploration src/fremenExploration.cpp)
 add_executable(exploration_executioner src/exploration_executioner.cpp)
+add_executable(morse_scene_generator src/morse_scene_generator.cpp)
 add_executable(exploration_planner src/exploration_planner.cpp)
 add_executable(exploration_scheduler src/exploration_scheduler.cpp)
 add_executable(exploration_schedule_creator src/exploration_schedule_creator.cpp)
@@ -64,6 +66,7 @@ add_dependencies(grid2pic ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_me
 add_dependencies(frontier_exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration_executioner ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(morse_scene_generator ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration_planner ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(flat_generate_grids ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(exploration_scheduler ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
@@ -98,6 +101,7 @@ target_link_libraries(exploration_planner order)
 target_link_libraries(exploration ${catkin_LIBRARIES})
 target_link_libraries(exploration_monitor ${catkin_LIBRARIES} curl)
 target_link_libraries(exploration_executioner ${catkin_LIBRARIES})
+target_link_libraries(morse_scene_generator ${catkin_LIBRARIES})
 target_link_libraries(exploration_planner ${catkin_LIBRARIES})
 target_link_libraries(exploration_benchmarking ${catkin_LIBRARIES})
 target_link_libraries(exploration_scheduler ${catkin_LIBRARIES})

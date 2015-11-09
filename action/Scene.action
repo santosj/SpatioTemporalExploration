@@ -1,0 +1,8 @@
+# Define the goal
+int64 t
+---
+# Define the result
+int64 changes
+---
+# Define a feedback message
+
