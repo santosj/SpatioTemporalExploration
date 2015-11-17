@@ -2,6 +2,7 @@
 #include <geometry_msgs/PoseArray.h>
 #include <actionlib/client/simple_action_client.h>
 #include <spatiotemporalexploration/ExecutionAction.h>
+#include <spatiotemporalexploration/SceneAction.h>
 #include <spatiotemporalexploration/PlanAction.h>
 #include <spatiotemporalexploration/SaveLoad.h>
 #include <strands_navigation_msgs/MonitoredNavigationAction.h>
@@ -19,6 +20,7 @@
 
 static volatile bool stop = false;
 int portno = 4000;
+const char *directory = "/home/linda/tomtests/";
 
 void intHandler(int dummy) 
 { 
@@ -33,6 +35,7 @@ using namespace std;
 
 typedef actionlib::SimpleActionClient<spatiotemporalexploration::ExecutionAction> ExecutionClient;
 typedef actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> PlanClient;
+typedef actionlib::SimpleActionClient<spatiotemporalexploration::SceneAction> SceneClient;
 actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> *ac_nav_ptr;
 
 uint32_t timeStamps[SLOTS];
@@ -98,9 +101,13 @@ int main(int argc,char *argv[])
 	PlanClient ac_plan("planner", true);
 	ac_plan.waitForServer();
 
+    SceneClient ac_scene("morse_scene_generator", true);
+    ac_scene.waitForServer();
+
 	actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> ac_nav("monitored_navigation",true);
 	ac_nav.waitForServer();
 
+    spatiotemporalexploration::SceneGoal scene_goal;
 	spatiotemporalexploration::PlanGoal plan_goal;
 	spatiotemporalexploration::ExecutionGoal exec_goal;
 
@@ -180,7 +187,14 @@ int main(int argc,char *argv[])
 		char timeStr[100];
 		char fileName[100];
 		strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
-		sprintf(fileName,"/localhome/strands/3dmaps/%s-%i.3dmap",timeStr,plans[position]);
+		sprintf(fileName,"%s/3dmaps/%s-%i.3dmap",directory,timeStr,plans[position]);
+
+
+        //generate morse scene
+        scene_goal.t = timeStamps[position];
+        ac_scene.sendGoal(scene_goal);
+        ac_scene.waitForResult();
+
 
 
 		geometry_msgs::Pose initial_pose, final_pose;//in order to improve the replan

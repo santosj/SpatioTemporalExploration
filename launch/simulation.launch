@@ -1,0 +1,9 @@
+<launch>
+	<node pkg="spatiotemporalexploration" type="morse_scene_generator" name="scene_generator"  output="screen">
+		<param name="positions_file" value="/home/linda/catkin_ws/src/SpatioTemporalExploration/data/tom.txt" />
+		<param name="data_file" value="/home/linda/catkin_ws/src/SpatioTemporalExploration/data/all.txt" />
+		<param name="initial_time" value="0" />
+		<param name="time_step" value="300" />
+	</node>
+	
+</launch>
