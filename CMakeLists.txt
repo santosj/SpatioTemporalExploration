@@ -18,7 +18,7 @@ add_service_files(
 		AddView.srv
 		Visualize.srv
 		FlatGrid.srv
-		
+		InjectPose.srv
 )
 
 add_action_files(
