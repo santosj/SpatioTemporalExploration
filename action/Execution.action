@@ -2,6 +2,7 @@
 geometry_msgs/PoseArray locations
 int64 t
 bool replan
+bool godmode
 ---
 # Define the result
 float32 information

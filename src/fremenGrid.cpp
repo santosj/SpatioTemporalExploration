@@ -115,6 +115,7 @@ int measurements = maxMeasurements;
 float *dept;
 bool first_grid = true;
 
+int timestamp;
 
 CFremenGrid *grid;
 float *old_grid;
@@ -232,13 +233,15 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         }
         int lastInfo = grid->obtainedInformationLast;
         printf("Depth image to point cloud took %i ms,",timer.getTime());
-        grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
+        grid->incorporate(x,y,z,d,len,timestamp);
         //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
         //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
         //		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformation-lastInfo);
         //printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
     }
 }
+
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -370,6 +373,7 @@ bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalex
 bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
     std_msgs::Float32 info;
+    timestamp = req.stamp;
     integrateMeasurements = 3;
     measurements = 0;
     res.result = true;

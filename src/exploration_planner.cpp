@@ -67,13 +67,46 @@ bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
     if (file!=NULL)
     {
         ROS_INFO("loading reachability grid...");
+        float dummyX,dummyY;
+        int grid_ind = 0;
+        for(int j = 0; j < numCellsY; j++)
+        {
+            for(int i = 0; i < numCellsX; i++)
+            {
+                int fuck=fscanf(file, "%f %f %f\n",&dummyX,&dummyY,&reachability_grid_ptr[grid_ind]);
+                if(reachability_grid_ptr[grid_ind] == 1.0)
+                    ROS_INFO("read: %f %f %f", dummyX, dummyY, reachability_grid_ptr[grid_ind]);
+                grid_ind++;
+            }
+        }
+
+        fclose(file);
+        res.result = true;
+    }
+    else
+    {
+        ROS_INFO("failed to load grid...");
+        res.result = false;
+    }
+
+    return true;
+
+}
+
+bool saveGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
+{
+
+    FILE* file = fopen(req.filename.c_str(),"w");
+    if (file!=NULL)
+    {
+        ROS_INFO("saving reachability grid...");
         int dummyX,dummyY;
         int grid_ind = 0;
         for(int j = 0; j < numCellsY; j++)
         {
             for(int i = 0; i < numCellsX; i++)
             {
-                int fuck=fscanf(file, "%03i %03i %f\n",&dummyX,&dummyY,&reachability_grid_ptr[grid_ind]);
+                int fuck=fprintf(file, "%03f %03f %f\n",MIN_X + entropies_step*(i+0.5),MIN_Y + entropies_step*(j+0.5),reachability_grid_ptr[grid_ind]);
                 grid_ind++;
             }
         }
@@ -333,13 +366,18 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
     ROS_INFO("Generating goals for timestamp %d", (int)goal->t);
 
+    if(goal->godmode)
+    {
+        ROS_INFO("generating plan for the omnipresent robot");
+    }
+
     spatiotemporalexploration::PlanResult result;
 
     //update entropy grid and publishes markers
     spatiotemporalexploration::Entropy entropy_srv;
     entropy_srv.request.z = 1.69;//convert to parameter
     entropy_srv.request.r = sensor_range;//convert to parameter
-    entropy_srv.request.t = 0.0;
+    entropy_srv.request.t = goal->t;
 
     //Markers Initialization
     visualization_msgs::MarkerArray points_markers, maximas_makers, reachability_markers;
@@ -394,6 +432,8 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
 
 
     ROS_INFO("Updating entropy grid...");
+
+    int numReachPts = 0;
 
     //update grid
     int ind = 0;
@@ -451,6 +491,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
                 reachability_markers.markers.push_back(reachable_point);
 
                 ros::spinOnce();
+                numReachPts++;
             }
             else
             {
@@ -480,17 +521,19 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     //    goal->last.position.x
     //    goal->last.position.y
 
+    int numMaximas = 0;
 
-
+    if(goal->godmode) numMaximas = numReachPts;
+    else numMaximas = goal->max_loc;
 
     /*** Get maximas ***/
     ROS_INFO("Getting local maximas...");
     maxima last_max, final_max;
-    float ix[goal->max_loc+1], iy[goal->max_loc+1];
+    float ix[numMaximas+1], iy[numMaximas+1];
 
     result.information = 0;
 
-    for(int w = 0; w < goal->max_loc; w++)
+    for(int w = 0; w < numMaximas; w++)
     {
         last_max.value = 0;
         last_max.x = 1;
@@ -537,19 +580,19 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
     ix[0] = goal->first.position.x;
     iy[0] =  goal->first.position.y;
     /* position of the charging station */
-    ix[goal->max_loc+1] = goal->last.position.x;
-    iy[goal->max_loc+1] =  goal->last.position.y;
+    ix[numMaximas+1] = goal->last.position.x;
+    iy[numMaximas+1] =  goal->last.position.y;
 
     /*** Path planning ***/
-    ROS_INFO("Planning the path (%d locations)...", goal->max_loc);
-    CTSP tsp(ix, iy, goal->max_loc+1);
-    tsp.solve(goal->max_loc*2);
+    ROS_INFO("Planning the path (%d locations)...", numMaximas);
+    CTSP tsp(ix, iy, numMaximas+1);
+    tsp.solve(numMaximas*2);
 
     result.locations.header.frame_id = "map";
 
     geometry_msgs::Pose pose_aux;
 
-    for(int i = 0; i < goal->max_loc+2; i++)
+    for(int i = 0; i < numMaximas+2; i++)
     {
         pose_aux.position.x = tsp.x[i];
         pose_aux.position.y = tsp.y[i];
@@ -557,7 +600,7 @@ void execute(const spatiotemporalexploration::PlanGoalConstPtr& goal, Server* as
         result.locations.poses.push_back(pose_aux);
     }
 
-    nr_previous_maximas = goal->max_loc;
+    nr_previous_maximas = numMaximas;
     ROS_INFO("Plan completed! Sending results...");
 
     //send goals
@@ -608,7 +651,8 @@ int main(int argc,char *argv[])
     plan_client_ptr = &plan_client;
     nav_msgs::GetPlan plan;
 
-    ros::ServiceServer vis_service = n.advertiseService("/reachabilityGrid/load", loadGrid);
+    ros::ServiceServer load_service = n.advertiseService("/reachabilityGrid/load", loadGrid);
+    ros::ServiceServer save_service = n.advertiseService("/reachabilityGrid/save", saveGrid);
     ros::ServiceServer edit_service = n.advertiseService("/reachabilityGrid/edit", editGrid);
 
     ros::Publisher points_pub = n.advertise<visualization_msgs::MarkerArray>("/entropy_grid", 100);
@@ -633,6 +677,7 @@ int main(int argc,char *argv[])
 
     //Reachability grid
     reachability_grid_ptr = new float[numCellsX*numCellsY];
+    ROS_INFO("Reachability grid dimensions %dx%d", numCellsX, numCellsY);
 
     plan.request.start.pose.position.x = -1.0;
     plan.request.start.pose.position.y = 0.0;

@@ -36,12 +36,20 @@ int sockfd, nn;
 struct sockaddr_in serv_addr;
 struct hostent *morse_server;
 
+const char *directory = "/home/linda/sim_results/commands";
 
 void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* as)
 {
     ROS_INFO("Asked to generate scene for time %i", (int) goal->t);
 
     char buffer[256];
+    char filename[100];
+
+    sprintf(filename,"%s/commands_%d.txt",directory,(int) goal->t);
+    FILE* file = fopen(filename,"w");
+
+    if (file==NULL)
+        ROS_ERROR("error opening file to write");
 
     ROS_INFO("Resetting the environment...");
 
@@ -54,27 +62,26 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
             //SITTING HUMANS
             sprintf(buffer, "id1 simulation set_object_pose [\"sitting%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", numType0,  150.0-i, 150.0-i, 0.0, 0.0, 0.0, 0.0, 1.0);
-
             nn = write(sockfd,buffer,strlen(buffer));
             if (nn < 0)ROS_ERROR("ERROR writing to socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             bzero(buffer,256);
             nn = read(sockfd,buffer,255);
             if (nn < 0)ROS_ERROR("ERROR reading from socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             //STANDING HUMANS
             sprintf(buffer, "id1 simulation set_object_pose [\"human%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", numType0, 100.0+i, 100.0+i, 0.0, 0.0, 0.0, 0.0, 1.0);
 
             nn = write(sockfd,buffer,strlen(buffer));
             if (nn < 0)ROS_ERROR("ERROR writing to socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             bzero(buffer,256);
             nn = read(sockfd,buffer,255);
             if (nn < 0)ROS_ERROR("ERROR reading from socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             //CHAIRS
             sprintf(buffer, "id1 simulation set_object_pose [\"chair%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", numType0,
@@ -82,12 +89,12 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
             nn = write(sockfd,buffer,strlen(buffer));
             if (nn < 0)ROS_ERROR("ERROR writing to socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             bzero(buffer,256);
             nn = read(sockfd,buffer,255);
             if (nn < 0)ROS_ERROR("ERROR reading from socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             numType0++;
 
@@ -100,12 +107,12 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
             nn = write(sockfd,buffer,strlen(buffer));
             if (nn < 0)ROS_ERROR("ERROR writing to socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
             //Get response
             bzero(buffer,256);
             nn = read(sockfd,buffer,255);
             if (nn < 0)ROS_ERROR("ERROR reading from socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             numType1++;
 
@@ -120,12 +127,12 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
             nn = write(sockfd,buffer,strlen(buffer));
             if (nn < 0)ROS_ERROR("ERROR writing to socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
 
             bzero(buffer,256);
             nn = read(sockfd,buffer,255);
             if (nn < 0)ROS_ERROR("ERROR reading from socket");
-            else ROS_INFO("%s",buffer);
+            //            else ROS_INFO("%s",buffer);
             numType2++;
         }
 
@@ -142,16 +149,16 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
     for(int i = 0; i < numObjects; i++)
     {
-	    float x,y,a;
-	    float ix,iy,ia;
-	    ix =  objects[i].e1x*((2.0*rand())/RAND_MAX-1);
-	    iy =  objects[i].e1y*((2.0*rand())/RAND_MAX-1);
-	    ia =  M_PI*objects[i].e1p*((2.0*rand())/RAND_MAX-1)/180.0;
-            a =   M_PI*objects[i].s1p/180.0;
-	    x =   objects[i].s1x+ix*cos(a)-iy*sin(a);
-	    y =   objects[i].s1y+ix*sin(a)+iy*cos(a);
-	    a =   a+ia;
-  
+        float x,y,a;
+        float ix,iy,ia;
+        ix =  objects[i].e1x*((2.0*rand())/RAND_MAX-1);
+        iy =  objects[i].e1y*((2.0*rand())/RAND_MAX-1);
+        ia =  M_PI*objects[i].e1p*((2.0*rand())/RAND_MAX-1)/180.0;
+        a =   M_PI*objects[i].s1p/180.0;
+        x =   objects[i].s1x+ix*cos(a)-iy*sin(a);
+        y =   objects[i].s1y+ix*sin(a)+iy*cos(a);
+        a =   a+ia;
+
         if(objects[i].type == 0)//humans at the desks
         {
             if(data_ptr->at(index+i) > 0)
@@ -161,17 +168,17 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
                     if(p == 0)//seated human
                     {
                         //CHAIRS
-                        sprintf(buffer, "id1 simulation set_object_pose [\"chair%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", seated_humans,
+                        sprintf(buffer, "id1 simulation set_object_pose [\"chair%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", i,
                                 x, y, objects[i].s1z, cos(a/2), 0.0, 0.0, sin(a/2));//qw qx qy qz
 
                         nn = write(sockfd,buffer,strlen(buffer));
                         if (nn < 0)ROS_ERROR("ERROR writing to socket");
-                        else ROS_INFO("%s",buffer);
+                        else fprintf(file,"%s",buffer);
 
                         bzero(buffer,256);
                         nn = read(sockfd,buffer,255);
-                        if (nn < 0)ROS_ERROR("ERROR reading from socket");
-                        else ROS_INFO("%s",buffer);
+                                                if (nn < 0)ROS_ERROR("ERROR reading from socket");
+                                                else fprintf(file,"%s",buffer);;
 
                         //SITTING HUMANS
                         sprintf(buffer, "id1 simulation set_object_pose [\"sitting%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", seated_humans,
@@ -179,44 +186,44 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
                         nn = write(sockfd,buffer,strlen(buffer));
                         if (nn < 0)ROS_ERROR("ERROR writing to socket");
-                        else ROS_INFO("%s",buffer);
+                        else fprintf(file,"%s",buffer);
 
                         bzero(buffer,256);
                         nn = read(sockfd,buffer,255);
                         if (nn < 0)ROS_ERROR("ERROR reading from socket");
-                        else ROS_INFO("%s",buffer);
+                        else fprintf(file,"%s",buffer);
 
                         seated_humans++;
                     }
                     else
                     {
                         if (p == 1){
-                            ix = -0.5; 
+                            ix = -0.5;
                             iy = -0.5;
                             ia = a - 0.4;
                         }
                         if (p == 2)
                         {
-                            ix = -2*ix; 
+                            ix = -2*ix;
                             iy = 0;
                             ia = a + 0.4;
                         }
-				
-			x =   x+ix*cos(a)-iy*sin(a);
-			y =   y+ix*sin(a)+iy*cos(a);
+
+                        x =   x+ix*cos(a)-iy*sin(a);
+                        y =   y+ix*sin(a)+iy*cos(a);
 
                         //STANDING HUMANS
                         sprintf(buffer, "id1 simulation set_object_pose [\"human%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", standing_humans,
-                               x, y, objects[i].s1z, cos(ia/2), 0.0, 0.0, sin(ia/2));//qw qx qy qz
+                                x, y, objects[i].s1z, cos(ia/2), 0.0, 0.0, sin(ia/2));//qw qx qy qz
 
                         nn = write(sockfd,buffer,strlen(buffer));
                         if (nn < 0)ROS_ERROR("ERROR writing to socket");
-                        else ROS_INFO("%s",buffer);
+                        else fprintf(file,"%s",buffer);
 
                         bzero(buffer,256);
                         nn = read(sockfd,buffer,255);
                         if (nn < 0)ROS_ERROR("ERROR reading from socket");
-                        else ROS_INFO("%s",buffer);
+                        else fprintf(file,"%s",buffer);
 
                         standing_humans++;
 
@@ -236,12 +243,12 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
                 nn = write(sockfd,buffer,strlen(buffer));
                 if (nn < 0)ROS_ERROR("ERROR writing to socket");
-                else ROS_INFO("%s",buffer);
+                else fprintf(file,"%s",buffer);
                 //Get response
                 bzero(buffer,256);
                 nn = read(sockfd,buffer,255);
                 if (nn < 0)ROS_ERROR("ERROR reading from socket");
-                else ROS_INFO("%s",buffer);
+                else fprintf(file,"%s",buffer);
             }
 
             numType1++;
@@ -254,21 +261,23 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
             {
                 sprintf(buffer, "id1 simulation set_object_pose [\"cpdoor%i\", \"[%f, %f, %f]\", \"[%f, %f, %f, %f]\"]\n", numType2,
                         objects[i].s1x, objects[i].s1y, objects[i].s1z, cos(((objects[i].s1p/2) * M_PI)/ 180), 0.0, 0.0, sin(((objects[i].s1p/2) * M_PI)/ 180));
+
                 nn = write(sockfd,buffer,strlen(buffer));
                 if (nn < 0)ROS_ERROR("ERROR writing to socket");
-                else ROS_INFO("%s",buffer);
+                else fprintf(file,"%s",buffer);
 
                 //Get response
                 bzero(buffer,256);
                 nn = read(sockfd,buffer,255);
                 if (nn < 0)ROS_ERROR("ERROR reading from socket");
-                else ROS_INFO("%s",buffer);
+                else fprintf(file,"%s",buffer);
             }
             numType2++;
         }
 
     }
 
+    fclose(file);
     ROS_INFO("DONE!");
     as->setSucceeded();
 

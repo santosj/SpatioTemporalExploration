@@ -3,6 +3,7 @@ int32 max_loc
 int64 t
 geometry_msgs/Pose first
 geometry_msgs/Pose last
+bool godmode
 ---
 # Define the result
 geometry_msgs/PoseArray locations
