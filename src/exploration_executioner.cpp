@@ -18,6 +18,7 @@
 #include "spatiotemporalexploration/AddView.h"
 #include "spatiotemporalexploration/Visualize.h"
 #include "spatiotemporalexploration/Reachable.h"
+#include "spatiotemporalexploration/InjectPose.h"
 
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
@@ -49,7 +50,7 @@ sensor_msgs::JointState ptu;
 spatiotemporalexploration::AddView measure_srv;
 spatiotemporalexploration::Visualize visualize_srv;
 
-ros::ServiceClient *measure_client_ptr, *visualize_client_ptr;
+ros::ServiceClient *measure_client_ptr, *visualize_client_ptr, *pose_client_ptr;
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 typedef actionlib::SimpleActionServer<spatiotemporalexploration::ExecutionAction> Server;
@@ -61,15 +62,6 @@ actionlib::SimpleActionClient<spatiotemporalexploration::PlanAction> *ac_plan_pt
 ros::Publisher *reach_pub_ptr, *vel_pub_ptr, *pose_pub_ptr;
 
 geometry_msgs::Pose current_pose, previous_pose;
-
-bool mislocalized = false;
-
-
-void poseCallback(const geometry_msgs::Pose::ConstPtr &msg)
-{
-    current_pose.position.x = msg->position.x;
-    current_pose.position.y = msg->position.y;
-}
 
 void chargingCallback(const scitos_msgs::BatteryState::ConstPtr &msg)
 {
@@ -103,14 +95,6 @@ void ptuCallback(const sensor_msgs::JointState::ConstPtr &msg)
     if (fabs(pan-ptu.position[0])<0.01 && fabs(tilt-ptu.position[1])<0.01) ptuMovementFinished++;
 }
 
-void amclCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
-{
-    if(msg->pose.covariance.at(0) > 5.0)
-        mislocalized = true;
-    else
-        mislocalized = false;
-}
-
 void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Server* as)
 {
 
@@ -130,14 +114,6 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
     srv_req.config = conf;
 
     ros::service::call("/move_base/DWAPlannerROS/set_parameters", srv_req, srv_resp);
-
-    //    double_param.name = "sim_time";
-    //    double_param.value = 0.2;
-    //    conf.doubles.push_back(double_param);
-
-    //    srv_req.config = conf;
-
-    //    ros::service::call("/move_base/DWAPlannerROS/set_parameters", srv_req, srv_resp);
 
     strands_navigation_msgs::MonitoredNavigationGoal current_goal;  //move base goal
     spatiotemporalexploration::ExecutionFeedback feedback;          //action feedback
@@ -165,6 +141,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         geometry_msgs::PoseWithCovarianceStamped pose_msg;
         pose_msg.header.frame_id = "map";
 
+        spatiotemporalexploration::InjectPose pose_srv;
+
         int i = 0;
         do
         {
@@ -183,21 +161,13 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             }
             else{
                 ROS_INFO("Robot teleported to (%f,%f)", exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
-                pose_msg.pose.pose.position.x = exploration_goals.poses[i].position.x;
-                pose_msg.pose.pose.position.y = exploration_goals.poses[i].position.y;
-                pose_msg.pose.pose.orientation.w = 1.0;
-                pose_msg.header.stamp = ros::Time::now();
-                pose_pub_ptr->publish(pose_msg);
+                pose_srv.request.pose.position.x = exploration_goals.poses[i].position.x;
+                pose_srv.request.pose.position.y = exploration_goals.poses[i].position.y;
+                pose_srv.request.pose.orientation.w = 1.0;
+                pose_client_ptr->call(pose_srv);
+
                 ROS_INFO("Pose injected");
                 ros::spinOnce();
-                sleep(0.25);
-                if(mislocalized)
-                {
-                    ROS_INFO("Robot mislocalized! Injecting position again...");
-                    pose_msg.header.stamp = ros::Time::now();
-                    pose_pub_ptr->publish(pose_msg);
-                }
-                //ROS_INFO("Pose injected");
             }
 
             bzero(buffer,256);
@@ -599,9 +569,6 @@ int main(int argc,char *argv[])
     ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel",10);
     vel_pub_ptr = &vel_pub;
 
-    ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 1000);
-    pose_pub_ptr = &pose_pub;
-
     //Subscribers
     ros::Subscriber ptu_sub = n.subscribe("/ptu/state", 10, ptuCallback);
     ptu.name.resize(3);
@@ -609,13 +576,15 @@ int main(int argc,char *argv[])
     ptu.velocity.resize(3);
     ptu_pub = n.advertise<sensor_msgs::JointState>("/ptu/cmd", 10);
     ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
-    ros::Subscriber pose_sub = n.subscribe("/robot_pose", 10, poseCallback);
-    ros::Subscriber amcl_sub = n.subscribe("/amcl_pose", 10, amclCallback);
+;
 
     //measure service client
     ros::ServiceClient measure_client = n.serviceClient<spatiotemporalexploration::AddView>("/fremenGrid/depth");
     measure_client_ptr = &measure_client;
 
+    //inject pose service client
+    ros::ServiceClient pose_client = n.serviceClient<spatiotemporalexploration::InjectPose>("/inject_pose");
+    pose_client_ptr = &pose_client;
 
     //vizualize client
     ros::ServiceClient visualize_client = n.serviceClient<spatiotemporalexploration::Visualize>("/fremenGrid/visualize");

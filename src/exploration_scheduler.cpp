@@ -6,10 +6,10 @@
 #include <spatiotemporalexploration/PlanAction.h>
 #include <spatiotemporalexploration/SaveLoad.h>
 #include <strands_navigation_msgs/MonitoredNavigationAction.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <scitos_msgs/BatteryState.h>
 #include <signal.h>
 
+#include "spatiotemporalexploration/InjectPose.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -89,11 +89,12 @@ int main(int argc,char *argv[])
 
     ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
 
-    ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 1000);
-    geometry_msgs::PoseWithCovarianceStamped pose_msg;
-    pose_msg.header.frame_id = "map";
-    pose_msg.pose.pose.position.x = 0.0;
-    pose_msg.pose.pose.orientation.w = 1.0;
+    ros::ServiceClient pose_client = n.serviceClient<spatiotemporalexploration::InjectPose>("/inject_pose");
+    spatiotemporalexploration::InjectPose pose_srv;
+    pose_srv.request.pose.position.x = 0.0;
+    pose_srv.request.pose.position.y = 0.0;
+    pose_srv.request.pose.orientation.w = 0.0;
+
 
     ExecutionClient ac_execution("executioner", true);
     ac_execution.waitForServer();
@@ -112,11 +113,14 @@ int main(int argc,char *argv[])
     spatiotemporalexploration::ExecutionGoal exec_goal;
 
 
+
+
     int sockfd, nn;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
     char buffer[256];
+    sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[0.0, 0.0, 0.0, 0.0]\"]\n", 10.2, 7.1);
 
 
     /* Create a socket point */
@@ -180,7 +184,7 @@ int main(int argc,char *argv[])
         }else{
             //create a one-time plan
             position = 0;
-            plans[position] = 1;
+            plans[position] = 0;
             timeStamps[position] = currentTime.sec;
             scene_goal.t = currentTime.sec%86400;
             plan_goal.godmode = true;
@@ -210,9 +214,11 @@ int main(int argc,char *argv[])
         final_pose.position.x = -1.0;
         final_pose.position.y = 0.0;
 
+        ROS_INFO("plans[position]: %d", plans[position]);
 
         if (plans[position] > 0 && stop == false)
         {
+            ROS_INFO("PLEBEU Mode.");
             ROS_INFO("Asking for a plan.");
 
             //generate the times for the entire day
@@ -276,8 +282,7 @@ int main(int argc,char *argv[])
                         }
                         else{
                             ROS_INFO("Robot teleported to the charging station!");
-                            pose_msg.header.stamp = ros::Time::now();
-                            pose_pub.publish(pose_msg);
+                            pose_client.call(pose_srv);
                         }
 
                         /* Now read server response */
@@ -365,8 +370,7 @@ int main(int argc,char *argv[])
                                         }
                                         else{
                                             ROS_INFO("Robot teleported to the charging station!");
-                                            pose_msg.header.stamp = ros::Time::now();
-                                            pose_pub.publish(pose_msg);
+                                            pose_client.call(pose_srv);
                                         }
 
                                         /* Now read server response */
@@ -443,8 +447,7 @@ int main(int argc,char *argv[])
                             }
                             else{
                                 ROS_INFO("Robot teleported to the charging station!");
-                                pose_msg.header.stamp = ros::Time::now();
-                                pose_pub.publish(pose_msg);
+                                pose_client.call(pose_srv);
                             }
 
                             /* Now read server response */
@@ -470,7 +473,7 @@ int main(int argc,char *argv[])
             ros::spinOnce();
 
         }
-        else if( plans[position] < 0 && stop == false)
+        else if( plans[position] == 3 && stop == false)//godmode
         {
             plan_goal.first = initial_pose;
             plan_goal.last = final_pose;
@@ -482,6 +485,7 @@ int main(int argc,char *argv[])
 
             if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
             {
+                ROS_INFO("GOD Mode.");
                 ROS_INFO("GODmode: received plan!");
                 //executes plan
                 exec_goal.locations = ac_plan.getResult()->locations;
@@ -516,8 +520,7 @@ int main(int argc,char *argv[])
                         }
                         else{
                             ROS_INFO("Robot teleported to the charging station!");
-                            pose_msg.header.stamp = ros::Time::now();
-                            pose_pub.publish(pose_msg);
+                            pose_client.call(pose_srv);
                         }
 
                         /* Now read server response */
