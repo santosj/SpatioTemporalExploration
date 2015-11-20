@@ -27,7 +27,7 @@ typedef actionlib::SimpleActionServer<spatiotemporalexploration::SceneAction> Se
 vector<int> *data_ptr;
 SObject objects[100];
 
-int numObjects;
+int numObjects = 0;
 
 unsigned int numLen = 0;
 int initial_time, time_step;
@@ -140,7 +140,7 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
 
     ROS_INFO("Generating the new scene as requested...");
 
-    unsigned int index = floor((goal->t-initial_time)/300);
+    unsigned int index = floor((goal->t-initial_time)/time_step)*LOCATIONS;
     ROS_INFO("Timestamp: %d -> Line: %d", (int) goal->t-initial_time, index);
 
     numType0 = 0, numType1 = 0, numType2 = 0, numType3 = 0;
@@ -158,12 +158,11 @@ void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* a
         x =   objects[i].s1x+ix*cos(a)-iy*sin(a);
         y =   objects[i].s1y+ix*sin(a)+iy*cos(a);
         a =   a+ia;
-
         if(objects[i].type == 0)//humans at the desks
         {
             if(data_ptr->at(index+i) > 0)
             {
-                for(int p = 0; p < data_ptr->at(i); p++)
+                for(int p = 0; p < data_ptr->at(index+i); p++)
                 {
                     if(p == 0)//seated human
                     {
@@ -346,15 +345,13 @@ int main(int argc,char *argv[])
         {
             for(int pos = 0; pos < (LOCATIONS - 1); pos++)
             {
-                err = fscanf(pFile,"%i\t", &value);
+                err = fscanf(pFile,"%i ", &value);
                 data.push_back(value);
-
             }
             err = fscanf(pFile,"%i\n", &value);
             data.push_back(value);
             numLen++;
         }
-
         ROS_INFO("%i lines loaded!", numLen);
         fclose(pFile);
 

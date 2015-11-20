@@ -56,18 +56,21 @@ void loadPlan(const char* name)
 {
     int patrols=0;
     FILE* file = fopen(name,"r");
-    uint32_t tmd;
-    int pland;
+    char stamp[10];
     int err;
     char realTime[10];
+    char planStr[10];
     while (feof(file)==0)
     {
-        err = fscanf(file,"%s %i %i\n",realTime,&tmd,&pland);
-        timeStamps[len] = tmd;
-        plans[len] = pland;
-        patrols+= (plans[len]>0);
-        //printf("%s %i %i\n",realTime,timeStamps[len],plans[len]);
-        len++;
+        err = fscanf(file,"%s %s %s\n",realTime,stamp,planStr);
+        printf("%s %s %s %i\n",realTime,stamp,planStr,err);
+        if (err == 3){
+            timeStamps[len] = atoi(stamp);
+            plans[len] = atoi(planStr);
+            patrols+= (plans[len]>0);
+            printf("%s %i %i %i\n",realTime,timeStamps[len],plans[len],err);
+            len++;
+        }
     }
     fclose(file);
     ROS_INFO("Scheduler: plan loaded length %i, %i patrols.\n",len,patrols);
@@ -75,7 +78,7 @@ void loadPlan(const char* name)
 
 int main(int argc,char *argv[])
 {
-    if (argc == 2||true)	runOnce = true;
+    if (argc == 1)	runOnce = true;
     if (runOnce) ROS_INFO("Exploration scheduler: No schedule received starting at once."); else loadPlan(argv[1]);
 
 
@@ -83,7 +86,6 @@ int main(int argc,char *argv[])
     ros::NodeHandle n;
 
     ros::NodeHandle nh("~");
-
 
     ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
 
@@ -112,6 +114,7 @@ int main(int argc,char *argv[])
     spatiotemporalexploration::SceneGoal scene_goal;
     spatiotemporalexploration::PlanGoal plan_goal;
     spatiotemporalexploration::ExecutionGoal exec_goal;
+    printf("A\n");
 
 
 
@@ -158,25 +161,18 @@ int main(int argc,char *argv[])
 
     signal(SIGINT, intHandler);
 
+    int position = -1;
     do
     {
-        int position = 0;
-        ros::Time currentTime = ros::Time::now();
-
         if (runOnce == false)
         {
-            while (timeStamps[position] < currentTime.sec && position < len) position++;
+            position++;
             if (position == len)
             {
-                ROS_ERROR("There is no future action in the schedule provided.");
+                ROS_ERROR("There is no future action in the schedule provided: %i %i.",position,len);
                 stop = true;
                 break;
             }
-            for (int i = 0;i<(timeStamps[position]-currentTime.sec)/10 && stop == false;i++){
-                printf("Actual plan %i commencing in %i minutes and %i seconds.\n",plans[position],(timeStamps[position]-currentTime.sec-i*10)/60,(timeStamps[position]-currentTime.sec-i*10)%60);
-                sleep(10);
-            }
-            if (stop==false) sleep((timeStamps[position]-currentTime.sec)%10+1);
             scene_goal.t = timeStamps[position];
 
         }else{
@@ -187,8 +183,7 @@ int main(int argc,char *argv[])
             //currentTime.sec%86400;
         }
 
-        time_t timeNow;
-        time(&timeNow);
+        time_t timeNow = scene_goal.t-3600;
         char timeStr[100];
         char fileName[100];
         strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
@@ -210,7 +205,7 @@ int main(int argc,char *argv[])
         final_pose.position.x = -1.0;
         final_pose.position.y = 0.0;
 
-        ROS_INFO("plans[position]: %d", plans[position]);
+        ROS_INFO("plans[%i]: %d",position, plans[position]);
 
         if (plans[position] > 0 &&  plans[position] < 3 && stop == false)
         {
@@ -301,14 +296,9 @@ int main(int argc,char *argv[])
 
                         bool plan_complete = ac_execution.getResult()->success;
 
-                        while(remaining_time > 180 && !plan_complete && ros::ok())//3 min (TODO -> dynamic reconfigure)
+                        while(!plan_complete && ros::ok())//3 min (TODO -> dynamic reconfigure)
                         {
-
-                            remaining_time = slot_duration - (ros::Time::now().sec - init_time);
-                            ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
-                            ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
-
-                            if (plans[position] == 2) plan_goal.t = 0;
+                            if (plans[position] == 2) plan_goal.t = 0;//TODO
                             if (plans[position] == 1) plan_goal.t = timeStamps[position];//;ros::Time::now().sec;
 
                             plan_goal.max_loc = ((int) ac_plan.getResult()->locations.poses.size() - 2) - (int) ac_execution.getResult()->visited_locations;
@@ -402,9 +392,6 @@ int main(int argc,char *argv[])
 
                             }
 
-                            remaining_time = slot_duration - (ros::Time::now().sec - init_time);
-                            ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
-                            ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
                         }
 
                         remaining_time = slot_duration - (ros::Time::now().sec - init_time);
@@ -508,7 +495,9 @@ int main(int argc,char *argv[])
 
 
                         /* Send message to the server */
+                        sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[0.0, 0.0, 0.0, 0.0]\"]\n", 10.2, 7.1);
                         nn = write(sockfd,buffer,strlen(buffer));
+                        printf("%s\n",buffer);
                         if (nn < 0)
                         {
                             ROS_ERROR("ERROR writing to socket");
@@ -522,6 +511,7 @@ int main(int argc,char *argv[])
                         /* Now read server response */
                         bzero(buffer,256);
                         nn = read(sockfd,buffer,255);
+                        printf("%s\n",buffer);
                         if (nn < 0)
                         {
                             ROS_ERROR("ERROR reading from socket");

@@ -143,7 +143,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
         spatiotemporalexploration::InjectPose pose_srv;
 
-        int i = 0;
+        int i = 1;
         do
         {
 
@@ -227,7 +227,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
 
             ROS_INFO("%d/%d", i+1,n);
             i++;
-        }while (i < n);
+        }while (i < n-1);
 
         ROS_INFO("GODmode over!");
         execution_result.success = true;
