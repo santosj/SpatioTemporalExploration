@@ -13,12 +13,13 @@ tmux new-window -t $SESSION:5 -n 'strands_ui'
 tmux new-window -t $SESSION:6 -n 'backtrack_behaviour'
 tmux new-window -t $SESSION:7 -n 'topo_nav'
 tmux new-window -t $SESSION:8 -n 'fremen'
-tmux new-window -t $SESSION:9 -n 'scene_generator'
-tmux new-window -t $SESSION:10 -n 'planner'
-tmux new-window -t $SESSION:11 -n 'executioner'
-tmux new-window -t $SESSION:12 -n 'scheduler'
-tmux new-window -t $SESSION:13 -n 'scheduler_creator'
-tmux new-window -t $SESSION:14 -n 'services'
+tmux new-window -t $SESSION:9 -n 'inject_pose'
+tmux new-window -t $SESSION:10 -n 'scene_generator'
+tmux new-window -t $SESSION:11 -n 'planner'
+tmux new-window -t $SESSION:12 -n 'executioner'
+tmux new-window -t $SESSION:13 -n 'scheduler'
+tmux new-window -t $SESSION:14 -n 'scheduler_creator'
+tmux new-window -t $SESSION:15 -n 'services'
 
 
 tmux select-window -t $SESSION:0
@@ -54,21 +55,24 @@ tmux select-window -t $SESSION:8
 tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration fremengrid"
 
 tmux select-window -t $SESSION:9
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration simulation.launch"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration inject_pose_server.py;"
 
 tmux select-window -t $SESSION:10
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration planner.launch"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration simulation.launch"
 
 tmux select-window -t $SESSION:11
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration executioner.launch"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration planner.launch"
 
 tmux select-window -t $SESSION:12
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_scheduler"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration executioner.launch"
 
 tmux select-window -t $SESSION:13
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_schedule_creator"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_scheduler"
 
 tmux select-window -t $SESSION:14
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_schedule_creator"
+
+tmux select-window -t $SESSION:15
 tmux send-keys "source ~/catkin_ws/devel/setup.bash;clear;"
 
 # Set default window
