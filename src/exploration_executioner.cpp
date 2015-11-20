@@ -372,8 +372,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     //                if (ac_nav_ptr->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)//docking was sucessful
                     //                    ROS_ERROR("docking failed!");
 
-                    //reach_pub_ptr->publish(reachable_points);
-                    //as->setSucceeded(execution_result);
+                    reach_pub_ptr->publish(reachable_points);
+                    as->setSucceeded(execution_result);
                 }
 
             }
@@ -489,8 +489,8 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                     execution_result.last.position.x = current_pose.position.x;
                     execution_result.last.position.y = current_pose.position.y;
                     ROS_INFO("Asking for new plan!!!");
-                    //reach_pub_ptr->publish(reachable_points);
-                    //as->setSucceeded(execution_result);
+                    reach_pub_ptr->publish(reachable_points);
+                    as->setSucceeded(execution_result);
                     break;
                 }
             }

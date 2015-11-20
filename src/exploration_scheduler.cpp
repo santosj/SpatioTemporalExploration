@@ -20,7 +20,7 @@
 
 static volatile bool stop = false;
 int portno = 4000;
-const char *directory = "/home/linda/tomtests/";
+const char *directory = "/home/linda/results";
 
 void intHandler(int dummy)
 {
@@ -176,19 +176,14 @@ int main(int argc,char *argv[])
                 sleep(10);
             }
             if (stop==false) sleep((timeStamps[position]-currentTime.sec)%10+1);
-
             scene_goal.t = timeStamps[position];
-            //            plan_goal.godmode = false;
-            //            exec_goal.godmode = false;
 
         }else{
             //create a one-time plan
             position = 0;
-            plans[position] = 0;
+            plans[position] = 3;
             timeStamps[position] = currentTime.sec;
             scene_goal.t = currentTime.sec%86400;
-            plan_goal.godmode = true;
-            exec_goal.godmode = true;
         }
 
         time_t timeNow;
@@ -196,7 +191,7 @@ int main(int argc,char *argv[])
         char timeStr[100];
         char fileName[100];
         strftime(timeStr, sizeof(timeStr), "%Y-%m-%d_%H:%M",localtime(&timeNow));
-        sprintf(fileName,"%s/3dmaps/%s-%i.3dmap",directory,timeStr,plans[position]);
+        sprintf(fileName,"%s/3dmaps/%s-%i-%d.3dmap",directory,timeStr,plans[position], (int) scene_goal.t);
 
 
         //generate morse scene

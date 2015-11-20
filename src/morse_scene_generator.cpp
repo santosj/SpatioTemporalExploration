@@ -36,7 +36,7 @@ int sockfd, nn;
 struct sockaddr_in serv_addr;
 struct hostent *morse_server;
 
-const char *directory = "/home/linda/sim_results/commands";
+const char *directory = "/home/linda/results/commands";
 
 void execute(const spatiotemporalexploration::SceneGoalConstPtr& goal, Server* as)
 {
