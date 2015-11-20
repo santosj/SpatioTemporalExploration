@@ -1,7 +1,7 @@
 <launch>
 	<node pkg="spatiotemporalexploration" type="morse_scene_generator" name="scene_generator"  output="screen">
-		<param name="positions_file" value="$(find SpatioTemporalExploration)/data/ww_objects.txt" />
-		<param name="data_file" value="$(find SpatioTemporalExploration)/ww_july.txt" />
+		<param name="positions_file" value="/home/linda/catkin_ws/src/SpatioTemporalExploration/data/ww_objects.txt" />
+		<param name="data_file" value="/home/linda/catkin_ws/src/SpatioTemporalExploration/data/ww_july.txt" />
 		<param name="initial_time" value="0" />
 		<param name="time_step" value="1800" />
 	</node>

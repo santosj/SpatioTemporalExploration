@@ -75,7 +75,7 @@ void loadPlan(const char* name)
 
 int main(int argc,char *argv[])
 {
-    if (argc == 1)	runOnce = true;
+    if (argc == 2||true)	runOnce = true;
     if (runOnce) ROS_INFO("Exploration scheduler: No schedule received starting at once."); else loadPlan(argv[1]);
 
 
@@ -93,7 +93,8 @@ int main(int argc,char *argv[])
     spatiotemporalexploration::InjectPose pose_srv;
     pose_srv.request.pose.position.x = 0.0;
     pose_srv.request.pose.position.y = 0.0;
-    pose_srv.request.pose.orientation.w = 0.0;
+    pose_srv.request.pose.position.z = 0.1;
+    pose_srv.request.pose.orientation.w = 1.0;
 
 
     ExecutionClient ac_execution("executioner", true);
@@ -182,8 +183,8 @@ int main(int argc,char *argv[])
             //create a one-time plan
             position = 0;
             plans[position] = 3;
-            timeStamps[position] = currentTime.sec;
-            scene_goal.t = currentTime.sec%86400;
+            scene_goal.t = timeStamps[position] = atoi(argv[1]);
+            //currentTime.sec%86400;
         }
 
         time_t timeNow;
@@ -211,7 +212,7 @@ int main(int argc,char *argv[])
 
         ROS_INFO("plans[position]: %d", plans[position]);
 
-        if (plans[position] > 0 && stop == false)
+        if (plans[position] > 0 &&  plans[position] < 3 && stop == false)
         {
             ROS_INFO("PLEBEU Mode.");
             ROS_INFO("Asking for a plan.");
