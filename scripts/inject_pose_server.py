@@ -9,7 +9,7 @@ import PyKDL
 
 
 def pose_dist(pos1,pos2):
-    dist = math.sqrt((pos1.position.x - pos2.position.x)**2 + (pos1.position.y - pos2.position.y)**2 )
+    dist = math.sqrt((pos1.position.x - pos2.position.x)**2 + (pos1.position.y - pos2.position.y)**2 + (pos1.position.z - pos2.position.z)**2)
     a = PyKDL.Rotation.Quaternion(pos1.orientation.x, pos1.orientation.y, pos1.orientation.z, pos1.orientation.w)
     b = PyKDL.Rotation.Quaternion(pos2.orientation.x, pos2.orientation.y, pos2.orientation.z, pos2.orientation.w)
     c = a * b.Inverse()
@@ -28,9 +28,9 @@ class insert_pose_server(object):
 
     def inject_pose_cb(self, req):
         dist=10.0
-        while dist>0.05:
+        while dist>0.001:
             count=0
-            while dist>0.05 and count<=20:
+            while dist>0.001 and count<=20:
                 print 'injecting_pose try: %d' %count
                 new_pos=geometry_msgs.msg.PoseWithCovarianceStamped()
                 new_pos.header.stamp = rospy.Time.now()
@@ -42,17 +42,15 @@ class insert_pose_server(object):
                 rec_pos=rospy.wait_for_message('robot_pose', geometry_msgs.msg.Pose)
                 print rec_pos
                 dist,ang = pose_dist(new_pos.pose.pose, rec_pos)
-                print "DIST:"
-                print dist
-                print "Ang:"
-                print ang
+                print "DIST:",dist
+                print "Ang:",ang
 
-            if dist>0.05:
+            if dist>0.001:
                 new_pos=geometry_msgs.msg.PoseWithCovarianceStamped()
                 new_pos.header.stamp = rospy.Time.now()
                 new_pos.pose.pose.position.x = 0.0
                 new_pos.pose.pose.position.y = 0.0
-                new_pos.pose.pose.position.z = 0.0
+                new_pos.pose.pose.position.z = 0.001
                 new_pos.pose.pose.orientation.x=0.0
                 new_pos.pose.pose.orientation.y=0.0
                 new_pos.pose.pose.orientation.z=0.0

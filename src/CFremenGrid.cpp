@@ -65,35 +65,35 @@ float CFremenGrid::getClosestObstacle(float xp,float yp,float zt,float range)
 	int xEnd   = (int)((xp-oX+range)/resolution);
 	int yStart = (int)((yp-oY-range)/resolution);
 	int yEnd   = (int)((yp-oY+range)/resolution);
-    int zStart = (int)((0.5-oZ)/resolution);
-    int zEnd   = (int)((1.5-oZ)/resolution);
+	int zStart = (int)((0.5-oZ)/resolution);
+	int zEnd   = (int)((1.5-oZ)/resolution);
 	int xM = (int)((xp-oX)/resolution);
 	int yM = (int)((yp-oY)/resolution);
 	xM = fmax(fmin(xM,xDim-1),0);
 	yM = fmax(fmin(yM,yDim-1),0);
-    xStart = fmax(fmin(xStart,xDim-1),0);
-    xEnd   = fmax(fmin(xEnd,xDim-1),0);
-    yStart = fmax(fmin(yStart,yDim-1),0);
-    yEnd   = fmax(fmin(yEnd,yDim-1),0);
+	xStart = fmax(fmin(xStart,xDim-1),0);
+	xEnd   = fmax(fmin(xEnd,xDim-1),0);
+	yStart = fmax(fmin(yStart,yDim-1),0);
+	yEnd   = fmax(fmin(yEnd,yDim-1),0);
 	zStart = fmax(fmin(zStart,zDim-1),0);
 	zEnd   = fmax(fmin(zEnd,zDim-1),0);
 
 	int cellIndex=0;
-    for (int z = zStart;z<zEnd;z++)
+	for (int z = zStart;z<zEnd;z++)
 	{
-        for (int y = yStart;y<=yEnd;y++)
+		for (int y = yStart;y<=yEnd;y++)
 		{
 			cellIndex = xDim*(y+yDim*z);
-            for (int x = xStart;x<=xEnd;x++)
+			for (int x = xStart;x<=xEnd;x++)
 			{
-                if (predicted[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
+				if (predicted[cellIndex+x] > 0.7 && ((x-xM)*(x-xM)+(y-yM)*(y-yM)<minRange))
 				{
 					minRange = (x-xM)*(x-xM)+(y-yM)*(y-yM);
 				}
 			}	
 		}
 	}
-    return sqrt(minRange)*resolution;
+	return sqrt(minRange)*resolution;
 }
 
 float CFremenGrid::estimateInformation(float sx,float sy,float sz,float range,uint32_t timestamp)
@@ -309,7 +309,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 	float px,py,pz,rx,ry,rz,ax,ay,az,bx,by,bz,cx,cy,cz;
 	int startIndex,ix,iy,iz,index,final,xStep,yStep,zStep;
 	unsigned char process[size];
-	bool subsample = true;
+	bool subsample = false;
 	float maxRange = 4.0;
 
 	memset(aux,0,numCells*sizeof(char));
@@ -345,7 +345,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 						obtainedInformationLast += -(log2f(dumInf)-residualInformation);
 						dumInf = fmax(fmin(predicted[final],maxProb),minProb);
 						obtainedInformationPredicted += -(log2f(dumInf)-residualInformation);
-						//if (probs[final] < 0.5)setToOne++;
+						if (probs[final] < 0.5)setToOne++;
 						frelements[final].add(times,oneVal,1);	
 						probs[final] = maxProb; //else probs[final] = minProb;
 					}
@@ -374,7 +374,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					dumInf = fmax(fmin(predicted[final],maxProb),minProb);
 					obtainedInformationPredicted += -(log2f(dumInf)-residualInformation);
 				       	frelements[final].add(times,oneVal,1);	
-					//if (probs[final] < 0.5) setToOne++;
+					if (probs[final] < 0.5) setToOne++;
 					probs[final] = maxProb;//(maxProb+probs[final]*3)/4; //else probs[final] = minProb;
 				}
 				process[i] = 1;
@@ -539,7 +539,7 @@ bool CFremenGrid::load(const char* filename)
 	ret = fread(&oZ,sizeof(float),1,f);
 	ret = fread(&resolution,sizeof(float),1,f);
 	ret = fread(&obtainedInformationLast,sizeof(float),1,f);
-    //ret = fread(&obtainedInformationPredicted,sizeof(float),1,f);
+	ret = fread(&obtainedInformationPredicted,sizeof(float),1,f);
 	numCells = xDim*yDim*zDim;
 	ret = fread(probs,sizeof(float),numCells,f);
 	for (int i=0;i<numCells;i++) frelements[i].load(f);

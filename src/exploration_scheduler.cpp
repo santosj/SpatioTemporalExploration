@@ -80,42 +80,51 @@ int main(int argc,char *argv[])
 {
     if (argc == 1)	runOnce = true;
     if (runOnce) ROS_INFO("Exploration scheduler: No schedule received starting at once."); else loadPlan(argv[1]);
-
+    int debug = 0;
+    printf("%i\n",debug++);
 
     ros::init(argc, argv, "exploration_scheduler");
     ros::NodeHandle n;
+    printf("%i\n",debug++);
 
     ros::NodeHandle nh("~");
+    printf("%i\n",debug++);
 
     ros::ServiceClient saveGridService = n.serviceClient<spatiotemporalexploration::SaveLoad>("/fremenGrid/save");
+    printf("%i\n",debug++);
 
     ros::Subscriber charging_sub = n.subscribe("/battery_state", 10, chargingCallback);
+    printf("%i\n",debug++);
 
     ros::ServiceClient pose_client = n.serviceClient<spatiotemporalexploration::InjectPose>("/inject_pose");
     spatiotemporalexploration::InjectPose pose_srv;
     pose_srv.request.pose.position.x = 0.0;
     pose_srv.request.pose.position.y = 0.0;
-    pose_srv.request.pose.position.z = 0.1;
+    pose_srv.request.pose.position.z = 0.001;
     pose_srv.request.pose.orientation.w = 1.0;
+    printf("%i\n",debug++);
 
 
     ExecutionClient ac_execution("executioner", true);
     ac_execution.waitForServer();
+    printf("A%i\n",debug++);
 
     PlanClient ac_plan("planner", true);
     ac_plan.waitForServer();
+    printf("%i\n",debug++);
 
     SceneClient ac_scene("scene_generator", true);
     ac_scene.waitForServer();
+    printf("%i\n",debug++);
 
     actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> ac_nav("monitored_navigation",true);
-    ac_nav.waitForServer();
+    //ac_nav.waitForServer();
+    printf("%i\n",debug++);
 
     spatiotemporalexploration::SceneGoal scene_goal;
     spatiotemporalexploration::PlanGoal plan_goal;
     spatiotemporalexploration::ExecutionGoal exec_goal;
-    printf("A\n");
-
+    printf("%i\n",debug++);
 
 
 
@@ -124,7 +133,7 @@ int main(int argc,char *argv[])
     struct hostent *server;
 
     char buffer[256];
-    sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[0.0, 0.0, 0.0, 0.0]\"]\n", 10.2, 7.1);
+    sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.001]\", \"[0.0, 0.0, 0.0, 0.0]\"]\n", 10.2, 7.1);
 
 
     /* Create a socket point */

@@ -147,7 +147,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
         do
         {
 
-            sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.1]\", \"[1.0, 0.0, 0.0, 0.0]\"]\n", exploration_goals.poses[i].position.x + 10.2, exploration_goals.poses[i].position.y + 7.1);
+            sprintf(buffer, "id1 simulation set_object_pose [\"robot\", \"[%f, %f, 0.001]\", \"[1.0, 0.0, 0.0, 0.0]\"]\n", exploration_goals.poses[i].position.x + 10.2, exploration_goals.poses[i].position.y + 7.1);
             ROS_INFO("%s", buffer);
 
             /* Send message to the server */
@@ -163,6 +163,7 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
                 ROS_INFO("Robot teleported to (%f,%f)", exploration_goals.poses[i].position.x, exploration_goals.poses[i].position.y);
                 pose_srv.request.pose.position.x = exploration_goals.poses[i].position.x;
                 pose_srv.request.pose.position.y = exploration_goals.poses[i].position.y;
+                pose_srv.request.pose.position.z = 0.001;
                 pose_srv.request.pose.orientation.w = 1.0;
                 pose_client_ptr->call(pose_srv);
 
@@ -182,46 +183,48 @@ void execute(const spatiotemporalexploration::ExecutionGoalConstPtr& goal, Serve
             {
                 measure_srv.request.stamp = goal->t;
                 if (ptuMovementFinished > 10)
-                {
-                    if(measure_client_ptr->call(measure_srv))
-                    {
-                        ROS_INFO("%d -> Measure added to grid!", point);
-                    }
-                    else
-                    {
-                        ROS_ERROR("Failed to call measure service");
-                        exit(1);
-                    }
-                    ros::spinOnce();
-                    usleep(120000);
+		{
+			usleep(300000);
+			if(measure_client_ptr->call(measure_srv))
+			{
+				ROS_INFO("%d -> Measure added to grid!", point);
+			}
+			else
+			{
+				ROS_ERROR("Failed to call measure service");
+				exit(1);
+			}
+			ros::spinOnce();
+			//usleep(400000);
+			//usleep(120000);
 
-                    point++;
-                    movePtu(pan[point],tilt[point]);
-                    ros::spinOnce();
-                    if(drawCells){
-                        visualize_srv.request.red = visualize_srv.request.blue = 0.0;
-                        visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
-                        visualize_srv.request.minProbability = 0.9;
-                        visualize_srv.request.maxProbability = 1.0;
-                        visualize_srv.request.name = "occupied";
-                        visualize_srv.request.type = 0;
-                        visualize_client_ptr->call(visualize_srv);
-                        ros::spinOnce();
-                        usleep(100000);
-                        if (drawEmptyCells){
-                            visualize_srv.request.green = 0.0;
-                            visualize_srv.request.red = 1.0;
-                            visualize_srv.request.minProbability = 0.0;
-                            visualize_srv.request.maxProbability = 0.1;
-                            visualize_srv.request.alpha = 0.005;
-                            visualize_srv.request.name = "free";
-                            visualize_srv.request.type = 0;
-                            visualize_client_ptr->call(visualize_srv);
-                            ros::spinOnce();
-                            usleep(100000);
-                        }
-                    }
-                }
+			point++;
+			movePtu(pan[point],tilt[point]);
+			ros::spinOnce();
+			if(drawCells){
+				visualize_srv.request.red = visualize_srv.request.blue = 0.0;
+				visualize_srv.request.green = visualize_srv.request.alpha = 1.0;
+				visualize_srv.request.minProbability = 0.9;
+				visualize_srv.request.maxProbability = 1.0;
+				visualize_srv.request.name = "occupied";
+				visualize_srv.request.type = 0;
+				visualize_client_ptr->call(visualize_srv);
+				ros::spinOnce();
+				usleep(100000);
+				if (drawEmptyCells){
+					visualize_srv.request.green = 0.0;
+					visualize_srv.request.red = 1.0;
+					visualize_srv.request.minProbability = 0.0;
+					visualize_srv.request.maxProbability = 0.1;
+					visualize_srv.request.alpha = 0.005;
+					visualize_srv.request.name = "free";
+					visualize_srv.request.type = 0;
+					visualize_client_ptr->call(visualize_srv);
+					ros::spinOnce();
+					usleep(100000);
+				}
+			}
+		}
                 ros::spinOnce();
             }
 
@@ -556,7 +559,7 @@ int main(int argc,char *argv[])
 
     actionlib::SimpleActionClient<strands_navigation_msgs::MonitoredNavigationAction> ac_nav("monitored_navigation",true);
     ac_nav_ptr = &ac_nav;
-    ac_nav.waitForServer();
+    //ac_nav.waitForServer();
 
     PlanClient ac_plan("planner", true);
     ac_plan_ptr = &ac_plan;
