@@ -450,6 +450,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			for (j=0;index!=final;j++)
 			{
 				//if (debug) printf("Index %06i %06i %06i %.2f %.2f %.2f %.2f\n",index,final,startIndex,bx,bx*rx+px,by*ry+py,bz*rz+pz);
+                if (index < 0 || index >= numCells) break;
 				if (aux[index] == 0){
 					aux[index] = 1;
 					dumInf = fmax(fmin(probs[index],maxProb),minProb);

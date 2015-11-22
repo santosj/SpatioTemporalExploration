@@ -24,7 +24,7 @@
 #define WW_MORSE
 
 #ifdef WW_MORSE
-#define MIN_X  -15.05
+#define MIN_X  -15.65
 #define MIN_Y  -5.95
 #define MIN_Z  0.05
 #define DIM_X 164
