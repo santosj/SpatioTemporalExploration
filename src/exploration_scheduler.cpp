@@ -29,7 +29,7 @@ void intHandler(int dummy)
     ros::shutdown();
 }
 
-#define SLOTS 96
+#define SLOTS 10000
 
 using namespace std;
 
@@ -56,14 +56,13 @@ void loadPlan(const char* name)
 {
     int patrols=0;
     FILE* file = fopen(name,"r");
-    char stamp[10];
+    char stamp[20];
     int err;
-    char realTime[10];
-    char planStr[10];
+    char realTime[20];
+    char planStr[20];
     while (feof(file)==0)
     {
         err = fscanf(file,"%s %s %s\n",realTime,stamp,planStr);
-        printf("%s %s %s %i\n",realTime,stamp,planStr,err);
         if (err == 3){
             timeStamps[len] = atoi(stamp);
             plans[len] = atoi(planStr);
@@ -214,7 +213,7 @@ int main(int argc,char *argv[])
         final_pose.position.x = -1.0;
         final_pose.position.y = 0.0;
 
-        ROS_INFO("plans[%i]: %d",position, plans[position]);
+        ROS_INFO("plans[%i]: %i",position, plans[position]);
 
         if (plans[position] > 0 &&  plans[position] < 3 && stop == false)
         {
