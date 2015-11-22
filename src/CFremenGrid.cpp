@@ -455,7 +455,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					printf("break!!\n");
 					break;
 				}
-				if (i > 400){
+				if (j > 400){
 					printf("Stuckup, %i %i %i Step: %i %i %i Increment: %.5f %.5f %.5f \n",startIndex,index,final,xStep,yStep,zStep,cx,cy,cz);
 					break;
 				}
