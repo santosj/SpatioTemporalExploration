@@ -325,10 +325,12 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
     integrateMeasurements = 3;
     measurements = 0;
     incorporating = false;
+    printf("Add depth called\n");
     while (incorporating == false){
 	    ros::spinOnce();
 	    usleep(10000);
     }
+    printf("Add depth finished\n");
     res.result = true;
     info.data = res.information = grid->getObtainedInformationLast();
     information_publisher.publish(info);

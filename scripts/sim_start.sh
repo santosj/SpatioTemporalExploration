@@ -52,25 +52,25 @@ tmux select-window -t $SESSION:7
 tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch topological_navigation topological_navigation_empty_map.launch map:=empty_map mon_nav_config_file:=$(rospack find strands_recovery_behaviours)/config/monitored_nav_config.yaml"
 
 tmux select-window -t $SESSION:8
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalcatkin_ws fremengrid"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration fremengrid"
 
 tmux select-window -t $SESSION:9
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalcatkin_ws inject_pose_server.py;"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration inject_pose_server.py;"
 
 tmux select-window -t $SESSION:10
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalcatkin_ws simulation.launch"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration simulation.launch"
 
 tmux select-window -t $SESSION:11
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalcatkin_ws planner.launch"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration planner.launch"
 
 tmux select-window -t $SESSION:12
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalcatkin_ws executioner.launch"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 roslaunch spatiotemporalexploration executioner.launch"
 
 tmux select-window -t $SESSION:13
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalcatkin_ws catkin_ws_scheduler"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_scheduler"
 
 tmux select-window -t $SESSION:14
-tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalcatkin_ws catkin_ws_schedule_creator"
+tmux send-keys "source ~/catkin_ws/devel/setup.bash; DISPLAY=:0 rosrun spatiotemporalexploration exploration_schedule_creator"
 
 tmux select-window -t $SESSION:15
 tmux send-keys "source ~/catkin_ws/devel/setup.bash;clear;"

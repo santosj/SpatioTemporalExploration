@@ -445,12 +445,20 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			//if (debug) printf("Indices %i %i %.2f %.2f %.2f %.2f %.2f %.2f \n",index,final,bx,by,bz,cx,cy,cz);
 			prepare += timer.getTime();
 			timer.reset();
-			int j = 0;	
+			int j = 0;
 			// start the grid traversal process 
 			for (j=0;index!=final;j++)
 			{
 				//if (debug) printf("Index %06i %06i %06i %.2f %.2f %.2f %.2f\n",index,final,startIndex,bx,bx*rx+px,by*ry+py,bz*rz+pz);
-                if (index < 0 || index >= numCells) break;
+				if (index < 0 || index >= numCells)
+				{
+					printf("break!!\n");
+					break;
+				}
+				if (i > 400){
+					printf("Stuckup, %i %i %i Step: %i %i %i Increment: %.5f %.5f %.5f \n",startIndex,index,final,xStep,yStep,zStep,cx,cy,cz);
+					break;
+				}
 				if (aux[index] == 0){
 					aux[index] = 1;
 					dumInf = fmax(fmin(probs[index],maxProb),minProb);
@@ -459,7 +467,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					obtainedInformationPredicted += -(log2f(1-dumInf)-residualInformation);
 					if (probs[index] > 0.5) setToZero++;
 					probs[index] = minProb;//(minProb+probs[index]*3)/4;
-				       	frelements[index].add(times,zeroVal,1);	
+					frelements[index].add(times,zeroVal,1);	
 				}
 				if (bx < by && bx < bz)
 				{
