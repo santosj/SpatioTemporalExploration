@@ -221,7 +221,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
                 d[cnt] = 1;
                 if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
                 {
-                    di = 0;//CAMERA_RANGE;
+                    di = CAMERA_RANGE;
                     d[cnt] = 0;
                 }
                 ix = di*(cos(psi)-sin(psi)*h);

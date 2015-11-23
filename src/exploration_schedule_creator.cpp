@@ -34,10 +34,10 @@ int main(int argc,char *argv[])
 
 
 	/*the scheduling part*/
-	ros::Time currentTime = ros::Time::now();
-	printf("TIME: %i\n",currentTime.sec);
-	uint32_t midnight = (currentTime.sec/(24*3600)+1*atoi(argv[1]))*24*3600-3600; //remove +1 to plan retrospectively
-	printf("MIDNIGHT: %i %i\n",midnight,midnight-currentTime.sec);
+	int currentTime = atoi(argv[1]);
+	printf("TIME: %i\n",currentTime);
+	uint32_t midnight = atoi(argv[1]); 
+	printf("MIDNIGHT: %i %i\n",midnight,midnight-currentTime);
 
 
 	uint32_t timeSlots[SLOTS];
@@ -51,7 +51,7 @@ int main(int argc,char *argv[])
 	for (int i = 0;i<SLOTS;i++) timeSlots[i] = midnight+3600*24/SLOTS*i; 
 	for (int i = 1;i<SLOTS;i+=2) plan[i] = 1;
 	for (int i = 0;i<SLOTS;i+=4) plan[i] = 0;
-	for (int i = 2;i<SLOTS;i+=4) plan[i] = 2;
+	for (int i = 2;i<SLOTS;i+=4) plan[i] = 0;
 
 	ROS_INFO("asking for a plan");
 	if (argc == 3){
@@ -59,7 +59,7 @@ int main(int argc,char *argv[])
 		for (int i = 0;i<SLOTS;i++)
 		{
 			if (plan[i] == 1){
-				plan_goal.max_loc = 10;
+				plan_goal.max_loc = 3;
 				plan_goal.first.position.x = -1;
 				plan_goal.first.position.y = +0;
 				plan_goal.last.position.x =  -1;
