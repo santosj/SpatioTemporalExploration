@@ -326,7 +326,8 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
     measurements = 0;
     incorporating = false;
     printf("Add depth called\n");
-    while (incorporating == false){
+    int counter = 0;
+    while (incorporating == false && counter++<200){
 	    ros::spinOnce();
 	    usleep(10000);
     }

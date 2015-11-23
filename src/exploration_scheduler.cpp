@@ -205,8 +205,6 @@ int main(int argc,char *argv[])
         ac_scene.sendGoal(scene_goal);
         ac_scene.waitForResult();
 
-
-
         geometry_msgs::Pose initial_pose, final_pose;//in order to improve the replan
         initial_pose.position.x = -1.0;
         initial_pose.position.y = 0.0;
@@ -215,269 +213,25 @@ int main(int argc,char *argv[])
 
         ROS_INFO("plans[%i]: %i",position, plans[position]);
 
-        if (plans[position] > 0 &&  plans[position] < 3 && stop == false)
+
+        plan_goal.max_loc = 3; //number of local maximas
+
+        if (plans[position] > 0 && plans[position] < 4 && stop == false)//godmode
         {
-            ROS_INFO("PLEBEU Mode.");
-            ROS_INFO("Asking for a plan.");
-
-            //generate the times for the entire day
-            //init_time = timeStamps[position];
-            init_time = ros::Time::now().sec;
-
-            plan_goal.godmode = false;
-            exec_goal.godmode = false;
-
-            //asks for a plan
-            plan_goal.max_loc = 6; //number of local maximas
+            plan_goal.first = initial_pose;
+            plan_goal.last = final_pose;
+            plan_goal.godmode = (plans[position] == 3);
+            exec_goal.godmode = true;
+        
+            if (plans[position] == 3) plan_goal.t = timeStamps[position];
             if (plans[position] == 2) plan_goal.t = 0; //????
             if (plans[position] == 1) plan_goal.t = timeStamps[position];
-            plan_goal.first = initial_pose;
-            plan_goal.last = final_pose;
 
             ac_plan.sendGoal(plan_goal);
             ac_plan.waitForResult();
 
             if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
             {
-                ROS_INFO("Received a plan with possible information gain of %f",ac_plan.getResult()->information);
-                ROS_INFO("Sending plan to be executed!");
-
-                remaining_time = slot_duration - (ros::Time::now().sec - init_time);
-                ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
-                ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
-
-                //executes plan
-                exec_goal.locations = ac_plan.getResult()->locations;
-                exec_goal.t = timeStamps[position];//plan_goal.t;
-                ac_execution.sendGoal(exec_goal);
-                ac_execution.waitForResult();//timeout?
-
-                /*save the map*/
-                spatiotemporalexploration::SaveLoad saveInfo;
-                saveInfo.request.filename = fileName;
-                saveInfo.request.order = 0;
-                saveInfo.request.lossy = false;
-                if(saveGridService.call(saveInfo) > 0) ROS_INFO("Grid save successful");
-
-
-                if (ac_execution.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-                {
-                    ROS_INFO("Executioner finished its task!");
-                    //spatiotemporalexploration::ExecutionActionResult exec_result = ac_execution.getResult();
-
-                    if(ac_execution.getResult()->success)
-                    {
-                        ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
-                        plan_goal.first = initial_pose;
-                        plan_goal.last = final_pose;
-
-
-                        /* Send message to the server */
-                        nn = write(sockfd,buffer,strlen(buffer));
-                        if (nn < 0)
-                        {
-                            ROS_ERROR("ERROR writing to socket");
-                            //exit(1);
-                        }
-                        else{
-                            ROS_INFO("Robot teleported to the charging station!");
-                            pose_client.call(pose_srv);
-                        }
-
-                        /* Now read server response */
-                        bzero(buffer,256);
-                        nn = read(sockfd,buffer,255);
-                        if (nn < 0)
-                        {
-                            ROS_ERROR("ERROR reading from socket");
-                            //exit(1);
-                        }
-
-                    }
-                    else
-                    {
-                        ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
-
-                        remaining_time = slot_duration - (ros::Time::now().sec - init_time);
-                        ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
-                        ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
-
-                        bool plan_complete = ac_execution.getResult()->success;
-
-                        while(!plan_complete && ros::ok())//3 min (TODO -> dynamic reconfigure)
-                        {
-                            if (plans[position] == 2) plan_goal.t = 0;//TODO
-                            if (plans[position] == 1) plan_goal.t = timeStamps[position];//;ros::Time::now().sec;
-
-                            plan_goal.max_loc = ((int) ac_plan.getResult()->locations.poses.size() - 2) - (int) ac_execution.getResult()->visited_locations;
-
-                            if(plan_goal.max_loc < 2)
-                            {
-                                plan_goal.max_loc = 2;
-                                ROS_INFO("Asking for new plan with %d locations to visit!", plan_goal.max_loc);
-                            }
-
-                            initial_pose.position.x = ac_execution.getResult()->last.position.x;
-                            initial_pose.position.y = ac_execution.getResult()->last.position.y;
-                            final_pose.position.x = -1.0;
-                            final_pose.position.y = 0.0;
-                            plan_goal.first = initial_pose;
-                            plan_goal.last = final_pose;
-
-                            ac_plan.sendGoal(plan_goal);
-                            ac_plan.waitForResult();
-
-                            if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-                            {
-                                ROS_INFO("Receive plan!");
-                                ROS_INFO("Sending plan to the executioner.");
-
-                                ROS_INFO("Plan sent with %d locations!", (int) ac_plan.getResult()->locations.poses.size());
-                                exec_goal.locations = ac_plan.getResult()->locations;
-                                exec_goal.t = timeStamps[position];//plan_goal.t;
-                                exec_goal.replan = true;
-                                ac_execution.sendGoal(exec_goal);
-                                ac_execution.waitForResult();
-
-                                if (ac_execution.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-                                {
-                                    ROS_INFO("Executioner finished its task!");
-                                    if(ac_execution.getResult()->success)
-                                    {
-                                        ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
-                                        plan_complete = true;
-                                        initial_pose.position.x = -1.0;
-                                        initial_pose.position.y = 0.0;
-                                        final_pose.position.x = -1.0;
-                                        final_pose.position.y = 0.0;
-                                        ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
-                                        plan_goal.first = initial_pose;
-                                        plan_goal.last = final_pose;
-
-
-                                        /* Send message to the server */
-                                        nn = write(sockfd,buffer,strlen(buffer));
-                                        if (nn < 0)
-                                        {
-                                            ROS_ERROR("ERROR writing to socket");
-                                            //exit(1);
-                                        }
-                                        else{
-                                            ROS_INFO("Robot teleported to the charging station!");
-                                            pose_client.call(pose_srv);
-                                        }
-
-                                        /* Now read server response */
-                                        bzero(buffer,256);
-                                        nn = read(sockfd,buffer,255);
-                                        if (nn< 0)
-                                        {
-                                            ROS_ERROR("ERROR reading from socket");
-                                            //exit(1);
-                                        }
-
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        ROS_WARN("Executioner failed to finish the plan! %d locations visited in %d.", (int) ac_execution.getResult()->visited_locations, (int) ac_plan.getResult()->locations.poses.size());
-                                        initial_pose.position.x = ac_execution.getResult()->last.position.x;
-                                        initial_pose.position.y = ac_execution.getResult()->last.position.y;
-                                        final_pose.position.x = -1.0;
-                                        final_pose.position.y = 0.0;
-                                        plan_complete = false;
-                                    }
-                                }
-                                else
-                                {
-                                    ROS_INFO("Exectuioner server failed!");
-                                    initial_pose.position.x = ac_execution.getResult()->last.position.x;
-                                    initial_pose.position.y = ac_execution.getResult()->last.position.y;
-                                    final_pose.position.x = -1.0;
-                                    final_pose.position.y = 0.0;
-                                    plan_complete = false;
-                                }
-
-                            }
-
-                        }
-
-                        remaining_time = slot_duration - (ros::Time::now().sec - init_time);
-                        ROS_INFO("Duration: %d \t Time: %d \t Beginning: %d", slot_duration, ros::Time::now().sec, init_time);
-                        ROS_INFO("%d seconds remaining in %d", remaining_time, slot_duration);
-
-                        if(!robot_charging)
-                        {
-                            ROS_INFO("There is no time for a new plan. Going to the charghing station!");
-                            strands_navigation_msgs::MonitoredNavigationGoal goal;
-                            goal.action_server = "move_base";
-                            goal.target_pose.header.frame_id = "map";
-                            goal.target_pose.pose.position.x = 1.0;
-                            goal.target_pose.pose.position.y = 0.0;
-                            goal.target_pose.pose.orientation.w = 1.0;
-                            ac_nav.sendGoal(goal);
-                            initial_pose.position.x = -1.0;
-                            initial_pose.position.y = 0.0;
-                            final_pose.position.x = -1.0;
-                            final_pose.position.y = 0.0;
-
-                            ROS_INFO("Execution of the plan was sucessful! Waiting for next time slot...");
-                            plan_goal.first = initial_pose;
-                            plan_goal.last = final_pose;
-
-
-                            ac_nav.waitForResult(ros::Duration(20.0));
-
-
-                            /* Send message to the server */
-                            nn = write(sockfd,buffer,strlen(buffer));
-                            if (nn < 0)
-                            {
-                                ROS_ERROR("ERROR writing to socket");
-                                //exit(1);
-                            }
-                            else{
-                                ROS_INFO("Robot teleported to the charging station!");
-                                pose_client.call(pose_srv);
-                            }
-
-                            /* Now read server response */
-                            bzero(buffer,256);
-                            nn = read(sockfd,buffer,255);
-                            if (nn < 0)
-                            {
-                                ROS_ERROR("ERROR reading from socket");
-                                //exit(1);
-                            }
-
-
-                        }
-                    }
-                }
-            }
-            else
-            {
-                ROS_INFO("Plan server failed!");
-            }
-            ROS_INFO("DONE!");
-
-            ros::spinOnce();
-
-        }
-        else if( plans[position] == 3 && stop == false)//godmode
-        {
-            plan_goal.first = initial_pose;
-            plan_goal.last = final_pose;
-            plan_goal.godmode = true;
-            exec_goal.godmode = true;
-
-            ac_plan.sendGoal(plan_goal);
-            ac_plan.waitForResult();
-
-            if (ac_plan.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-            {
-                ROS_INFO("GOD Mode.");
-                ROS_INFO("GODmode: received plan!");
                 //executes plan
                 exec_goal.locations = ac_plan.getResult()->locations;
                 exec_goal.t = timeStamps[position];

@@ -324,38 +324,44 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 	float xi,yi,zi;
 	int setToOne = 0;
 	int setToZero = 0;
+    int adIndex[] = {xDim*yDim-xDim-1,xDim*yDim-xDim+0,xDim*yDim-xDim+1,xDim*yDim-1,xDim*yDim+0,xDim*yDim+1,xDim*yDim+xDim-1,xDim*yDim+xDim+0,xDim*yDim+xDim+1,-xDim*yDim-xDim-1,-xDim*yDim-xDim+0,-xDim*yDim-xDim+1,-xDim*yDim-1,-xDim*yDim+0,-xDim*yDim+1,-xDim*yDim+xDim-1,-xDim*yDim+xDim+0,-xDim*yDim+xDim+1,-xDim-1,-xDim+0,-xDim+1,-1,+0,+1,+xDim-1,+xDim+0,+xDim+1};
 	if (subsample == false){
 		//rescale all
 		for (int i = 0;i<size+1;i++)
-		{
-			//x[i] = (x[i]-oX)/resolution;
-			//y[i] = (y[i]-oY)/resolution;
-			//z[i] = (z[i]-oZ)/resolution;
-			x[i] = fmin(fmax((x[i]-oX)/resolution,0.5),xDim-1);
-			y[i] = fmin(fmax((y[i]-oY)/resolution,0.5),yDim-1);
-			z[i] = fmin(fmax((z[i]-oZ)/resolution,0.5),zDim-1);
-			//if (x[i] > 0.5 && x[i] < xDim-1 && y[i] > 0.5 && y[i] < yDim-1 && z[i] > 0.5 && z[i] < zDim -1)
-			//{
-				final = (int)x[i]+xDim*((int)y[i]+yDim*((int)z[i]));
-				if (aux[final] != 1){
-					aux[final] = 1;
-					if (d[i]==1)
-					{
-						dumInf = fmax(fmin(probs[final],maxProb),minProb);
-						obtainedInformationLast += -(log2f(dumInf)-residualInformation);
-						dumInf = fmax(fmin(predicted[final],maxProb),minProb);
-						obtainedInformationPredicted += -(log2f(dumInf)-residualInformation);
-						if (probs[final] < 0.5)setToOne++;
-						frelements[final].add(times,oneVal,1);	
-						probs[final] = maxProb; //else probs[final] = minProb;
-					}
-					process[i] = 1;
-					processed++;
-				}
-			//}else{
-			//	process[i] = 0;
-			//}
-		}
+        {
+            //x[i] = (x[i]-oX)/resolution;
+            //y[i] = (y[i]-oY)/resolution;
+            //z[i] = (z[i]-oZ)/resolution;
+            x[i] = fmin(fmax((x[i]-oX)/resolution,0.5),xDim-1);
+            y[i] = fmin(fmax((y[i]-oY)/resolution,0.5),yDim-1);
+            z[i] = fmin(fmax((z[i]-oZ)/resolution,0.5),zDim-1);
+            //if (x[i] > 0.5 && x[i] < xDim-1 && y[i] > 0.5 && y[i] < yDim-1 && z[i] > 0.5 && z[i] < zDim -1)
+            //{
+            final = (int)x[i]+xDim*((int)y[i]+yDim*((int)z[i]));
+            /*for (int b = 0;b<27;b++)
+            {
+                int c = final + adIndex[b];
+                if (c>0&&c<numCells) aux[c] = 1;
+            }*/
+            //if (aux[final] != 1){
+                aux[final] = 1;
+                if (d[i]==1)
+                {
+                    dumInf = fmax(fmin(probs[final],maxProb),minProb);
+                    obtainedInformationLast += -(log2f(dumInf)-residualInformation);
+                    dumInf = fmax(fmin(predicted[final],maxProb),minProb);
+                    obtainedInformationPredicted += -(log2f(dumInf)-residualInformation);
+                    if (probs[final] < 0.5)setToOne++;
+                    frelements[final].add(times,oneVal,1);	
+                    probs[final] = maxProb; //else probs[final] = minProb;
+                }
+                process[i] = 1;
+                processed++;
+            //}
+            //}else{
+            //	process[i] = 0;
+            //}
+        }
 		//memset(process,1,size);
 	}else{
 		//rescale only one ray per cell, adjust ray direction to go to the ray centre 
@@ -365,7 +371,8 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			y[i] = fmin(fmax(floor((y[i]-oY)/resolution),1)+0.5,yDim-1);
 			z[i] = fmin(fmax(floor((z[i]-oZ)/resolution),1)+0.5,zDim-1);
 			final = (int)x[i]+xDim*((int)y[i]+yDim*((int)z[i]));
-			if (aux[final] != 1){
+			//if (aux[final] != 1){
+               
 				aux[final] = 1;
 				if (d[i]==1)
 				{
@@ -379,7 +386,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 				}
 				process[i] = 1;
 				processed++;
-			}
+			//}
 		}
 	}
 	//printf("rescaling from %i rays to %i rays took %i ms, ",size,processed,timer.getTime());
@@ -428,9 +435,9 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 			bx=by=bz=cx=cy=cz = xDim*yDim*zDim; //high enough to be outside of the grid
 
 			//initialize first intersection planes - these are in the general direction of the ray vector
-			ax = floor(px)+(ix+1)/2;
-			ay = floor(py)+(iy+1)/2;
-			az = floor(pz)+(iz+1)/2;
+			ax = floor(px+(ix+1)/2);
+			ay = floor(py+(iy+1)/2);
+			az = floor(pz+(iz+1)/2);
 
 			//calculate intersections with the planes
 			if (ix != 0) bx = (ax-px)/rx;
@@ -455,7 +462,7 @@ float CFremenGrid::incorporate(float *x,float *y,float *z,float *d,int size,uint
 					printf("break!!\n");
 					break;
 				}
-				if (i > 400){
+				if (j > 400){
 					printf("Stuckup, %i %i %i Step: %i %i %i Increment: %.5f %.5f %.5f \n",startIndex,index,final,xStep,yStep,zStep,cx,cy,cz);
 					break;
 				}
@@ -640,7 +647,12 @@ void CFremenGrid::buildLimits(float* grid)
 bool CFremenGrid::recalculate(uint32_t timestamp)
 {
 	int sum = 0;
-	if (timestamp == 0)  memcpy(predicted,probs,numCells*sizeof(float));
+    if (timestamp == 0){
+        for (int i =0;i<numCells;i++){
+            predicted[i] = frelements[i].estimate(0,0);
+            if (predicted[i] == 0.5) sum++;
+        }
+    } //memcpy(predicted,probs,numCells*sizeof(float));
 	else if (lastTimeStamp !=timestamp)
 	{
 		for (int i =0;i<numCells;i++){
