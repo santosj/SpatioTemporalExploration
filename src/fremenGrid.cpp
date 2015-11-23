@@ -323,11 +323,11 @@ bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporale
     std_msgs::Float32 info;
     timestamp = req.stamp;
     integrateMeasurements = 3;
-    measurements = 0;
     incorporating = false;
+    measurements = 0;
     printf("Add depth called\n");
     int counter = 0;
-    while (incorporating == false && counter++<200){
+    while (incorporating == false && counter++ < 150){
 	    ros::spinOnce();
 	    usleep(10000);
     }
