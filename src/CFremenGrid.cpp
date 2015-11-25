@@ -656,7 +656,7 @@ bool CFremenGrid::recalculate(uint32_t timestamp)
 	else if (lastTimeStamp !=timestamp)
 	{
 		for (int i =0;i<numCells;i++){
-			 predicted[i] = frelements[i].estimate(timestamp,2);
+			 predicted[i] = frelements[i].estimate(timestamp,1);
 			 if (predicted[i] == 0.5) sum++;
 		}
 		printf("Recalculating with timestamp %i %i %i %i\n",timestamp,lastTimeStamp,numCells,sum);

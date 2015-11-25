@@ -214,7 +214,7 @@ int main(int argc,char *argv[])
         ROS_INFO("plans[%i]: %i",position, plans[position]);
 
 
-        plan_goal.max_loc = 3; //number of local maximas
+        plan_goal.max_loc = 5; //number of local maximas
 
         if (plans[position] > 0 && plans[position] < 4 && stop == false)//godmode
         {
