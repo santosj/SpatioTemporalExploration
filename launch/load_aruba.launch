@@ -1,6 +1,0 @@
-<launch>
-	<node pkg="fremen" type="flat" name="aruba" output="screen">
-		<param name="filename" value="/home/santos/aruba/timeline_locations.txt" />
-	</node>
-	
-</launch>
