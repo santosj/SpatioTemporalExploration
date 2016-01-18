@@ -21,7 +21,16 @@
 #include "spatiotemporalexploration/Visualize.h"
 #include <std_msgs/String.h>
 
-#define WW
+#define WW_MORSE
+
+#ifdef WW_MORSE
+#define MIN_X  -15.65
+#define MIN_Y  -5.95
+#define MIN_Z  0.05
+#define DIM_X 164
+#define DIM_Y 120
+#define DIM_Z 30
+#endif
 
 #ifdef WW
 #define MIN_X  -15.5
@@ -29,34 +38,34 @@
 #define MIN_Z  -0.0
 #define DIM_X 160
 #define DIM_Y 120
-#define DIM_Z 30 
+#define DIM_Z 30
 #endif
 
 #ifdef BHAM_LARGE
 #define MIN_X  -18.2
-#define MIN_Y  -31.0 
+#define MIN_Y  -31.0
 #define MIN_Z  -0.0
-#define DIM_X 560 
-#define DIM_Y 990 
-#define DIM_Z 60 
+#define DIM_X 560
+#define DIM_Y 990
+#define DIM_Z 60
 #endif
 
 #ifdef BHAM_SMALL
 #define MIN_X  -5.8
-#define MIN_Y  -19.0 
+#define MIN_Y  -19.0
 #define MIN_Z  -0.0
-#define DIM_X 250 
-#define DIM_Y 500 
-#define DIM_Z 80 
+#define DIM_X 250
+#define DIM_Y 500
+#define DIM_Z 80
 #endif
 
-#ifdef UOL_SMALL 
+#ifdef UOL_SMALL
 #define MIN_X  -7
-#define MIN_Y  -5.6 
+#define MIN_Y  -5.6
 #define MIN_Z  -0.0
-#define DIM_X 280 
-#define DIM_Y 450 
-#define DIM_Z 80 
+#define DIM_X 280
+#define DIM_Y 450
+#define DIM_Z 80
 #endif
 
 #ifdef FLAT
@@ -101,11 +110,13 @@ float roi_maxz = 1.6;
 
 bool debug = false;
 int integrateMeasurements = 0;
-int maxMeasurements = 15;
+int maxMeasurements = 1;//15;
 int measurements = maxMeasurements;
 float *dept;
 bool first_grid = true;
+bool incorporating = false;
 
+int timestamp;
 
 CFremenGrid *grid;
 float *old_grid;
@@ -127,7 +138,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
     float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
     //if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
-
     //Disabled code does some filtration
     float *dataPtr;
     float di;
@@ -187,6 +197,8 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
             ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
             return;
         }
+    //finished
+    incorporating = true;
         CTimer timer;
         timer.reset();
         timer.start();
@@ -196,7 +208,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         double a,b,c;
         tf::Matrix3x3  rot = st.getBasis();
         rot.getEulerYPR(a,b,c,1);
-        printf("%.3f %.3f %.3f\n",a,b,c);
+        printf("PTU %.3f %.3f %.3f %.3f %.3f %.3f\n",xPtu,yPtu,zPtu,a,b,c);
         psi = -M_PI/2-c;
         phi = a-c-psi;
         int medinda; //median index
@@ -209,7 +221,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
                 d[cnt] = 1;
                 if (di < 0.05 || di >= CAMERA_RANGE || dept[medinda+1] != dept[medinda+maxMeasurements]) //basically, all noise is rejected
                 {
-                    di = 0;//CAMERA_RANGE;
+                    di = CAMERA_RANGE;
                     d[cnt] = 0;
                 }
                 ix = di*(cos(psi)-sin(psi)*h);
@@ -223,13 +235,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         }
         int lastInfo = grid->obtainedInformationLast;
         printf("Depth image to point cloud took %i ms,",timer.getTime());
-        grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
-        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-        //		printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformation-lastInfo);
-        //printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
+        grid->incorporate(x,y,z,d,len,timestamp);
     }
 }
+
 
 bool loadGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporalexploration::SaveLoad::Response &res)
 {
@@ -274,7 +283,12 @@ bool loadcompareGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiot
         {
             if(grid->probs[cnt] >= 0.5) estimate = 1; else estimate = 0;
             if(old_grid[cnt] >= 0.5) old_estimate = 1; else old_estimate = 0;
-            if(estimate != old_estimate) changes++;
+        grid->aux[cnt] = 0;
+            if(estimate != old_estimate)
+        {
+            grid->aux[cnt] = 1;
+            changes++;
+        }
         }
 
     }
@@ -294,60 +308,6 @@ bool saveGrid(spatiotemporalexploration::SaveLoad::Request  &req, spatiotemporal
     return true;
 }
 
-void points(const sensor_msgs::PointCloud2ConstPtr& points2)
-{
-
-    CTimer timer;
-    if (integrateMeasurements == 20){
-        timer.reset();
-        timer.start();
-        sensor_msgs::PointCloud points1,points;
-        sensor_msgs::convertPointCloud2ToPointCloud(*points2,points1);
-        tf::StampedTransform st;
-        try {
-            tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",points2->header.stamp, ros::Duration(1.0));
-            tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",points2->header.stamp,st);
-        }
-        catch (tf::TransformException ex) {
-            ROS_ERROR("FreMEn map cound not incorporate the latest measurements %s",ex.what());
-            return;
-        }
-        printf("Transform arrived %i \n",timer.getTime());
-        timer.reset();
-        tf_listener->transformPointCloud("/map", points1,points);
-        int size=points.points.size();
-        std::cout << "There are " << size << " fields." << std::endl;
-        std::cout << "Point " << st.getOrigin().x() << " " <<  st.getOrigin().y() << " " << st.getOrigin().z() << " " << std::endl;
-        float x[size+1],y[size+1],z[size+1],d[size+1];
-        int last = 0;
-        for(unsigned int i = 0; i < size; i++){
-            if (isnormal(points.points[i].x) > 0)
-            {
-                x[last] = points.points[i].x;
-                y[last] = points.points[i].y;
-                z[last] = points.points[i].z;
-                d[last] = 1;
-                last++;
-            }
-        }
-        x[last] = st.getOrigin().x();
-        y[last] = st.getOrigin().y();
-        z[last] = st.getOrigin().z();
-        printf("Point cloud processed %i \n",timer.getTime());
-        timer.reset();
-        grid->incorporate(x,y,z,d,last,points2->header.stamp.sec);
-        printf("Grid updated %i \n",timer.getTime());
-        integrateMeasurements--;
-    }
-    if (integrateMeasurements == 1)
-    {
-        integrateMeasurements--;
-        spatiotemporalexploration::Visualize::Request req;
-        req.green = req.blue = 0.0;
-        req.red = req.alpha = 1.0;
-    }
-}
-
 bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
     std_msgs::Float32 info;
@@ -361,8 +321,17 @@ bool addView(spatiotemporalexploration::AddView::Request  &req, spatiotemporalex
 bool addDepth(spatiotemporalexploration::AddView::Request  &req, spatiotemporalexploration::AddView::Response &res)
 {
     std_msgs::Float32 info;
+    timestamp = req.stamp;
     integrateMeasurements = 3;
+    incorporating = false;
     measurements = 0;
+    printf("Add depth called\n");
+    int counter = 0;
+    while (incorporating == false && counter++ < 150){
+        ros::spinOnce();
+        usleep(10000);
+    }
+    printf("Add depth finished\n");
     res.result = true;
     info.data = res.information = grid->getObtainedInformationLast();
     information_publisher.publish(info);
@@ -420,7 +389,7 @@ bool visualizeRoi(spatiotemporalexploration::Visualize::Request  &req, spatiotem
     float minZ = grid->oZ;
     float maxX = minX+grid->xDim*grid->resolution-3*grid->resolution/4;
     float maxY = minY+grid->yDim*grid->resolution-3*grid->resolution/4;
-    float maxZ = 2.1;//minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
+    float maxZ = minZ+grid->zDim*grid->resolution-3*grid->resolution/4;
     int cnt = 0;
     int cells = 0;
     float estimate,minP,maxP;
@@ -557,103 +526,6 @@ bool visualizeGrid(spatiotemporalexploration::Visualize::Request  &req, spatiote
     return true;
 }
 
-void imageCallbacak(const sensor_msgs::ImageConstPtr& msg)
-{
-    float depth = msg->data[640*480+640]+256*msg->data[640*480+640+1];
-    //if (integrateMeasurements < 20 && integrateMeasurements > 0) printf("Integrate %i\n",integrateMeasurements);
-
-    //Disabled code does some filtration
-    /*if (integrateMeasurements < 20 && integrateMeasurements > 0)
-    {
-        float di = 0;
-         if (integrateMeasurements == 15){
-             memset(measures,0,sizeof(int)*307200);
-             memset(dept,0,sizeof(float)*307200);
-             for (int i = 0;i<307200;i++) dept[i] = CAMERA_RANGE*2;
-             }
-         for (int i = 0;i<307200;i++){
-             di = (msg->data[i*2]+256*msg->data[i*2+1])/1000.0;
-             if (isnormal(di) != 0 && di > 0.15) {
-                if (di < dept[i]) dept[i] = di;
-             }
-         }
-         integrateMeasurements--;
-    }*/
-    int len =  msg->height*msg->width;
-    /*float vx = 1/570.0;
-    float vy = 1/570.0;
-    float cx = -320.5;
-    float cy = -240.5;*/
-    float vx = 1/570.34;
-    float vy = 1/570.34;
-    float cx = -314.5;
-    float cy = -235.5;
-    int width = msg->width;
-    int height = msg->height;
-    float fx = (1+cx)*vx;
-    float fy = (1+cy)*vy;
-    float lx = (width+cx)*vx;
-    float ly = (height+cy)*vy;
-    float x[len+1];
-    float y[len+1];
-    float z[len+1];
-    float d[len+1];
-    float di,psi,phi,phiPtu,psiPtu,xPtu,yPtu,zPtu,ix,iy,iz;
-    int cnt = 0;
-    di=psi=phi=phiPtu=psiPtu=xPtu=yPtu=zPtu=0;
-    if (integrateMeasurements == 3)
-    {
-        integrateMeasurements=0;
-        tf::StampedTransform st;
-        try {
-            tf_listener->waitForTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp, ros::Duration(0.5));
-            tf_listener->lookupTransform("/map","/head_xtion_depth_optical_frame",msg->header.stamp,st);
-        }
-        catch (tf::TransformException ex) {
-            ROS_ERROR("FreMEn map cound not incorporate the latest depth map %s",ex.what());
-            return;
-        }
-        CTimer timer;
-        timer.reset();
-        timer.start();
-        x[len] = xPtu = st.getOrigin().x();
-        y[len] = yPtu = st.getOrigin().y();
-        z[len] = zPtu = st.getOrigin().z();
-        double a,b,c;
-        tf::Matrix3x3  rot = st.getBasis();
-        rot.getEulerYPR(a,b,c,1);
-        printf("%.3f %.3f %.3f\n",a,b,c);
-        psi = -M_PI/2-c;
-        phi = a-c-psi;
-        for (float h = fy;h<ly;h+=vy)
-        {
-            for (float w = fx;w<lx;w+=vx)
-            {
-                di = (msg->data[cnt*2]+256*msg->data[cnt*2+1])/1000.0;
-                d[cnt] = 1;
-                if (di < 0.05 || di >= CAMERA_RANGE){
-                    di = CAMERA_RANGE;
-                    d[cnt] = 0;
-                }
-                ix = di*(cos(psi)-sin(psi)*h);
-                iy = -w*di;
-                iz = -di*(sin(psi)+cos(psi)*h);
-                x[cnt] = cos(phi)*ix-sin(phi)*iy+xPtu;
-                y[cnt] = sin(phi)*ix+cos(phi)*iy+yPtu;
-                z[cnt] = iz+zPtu;
-                cnt++;
-            }
-        }
-        int lastInfo = grid->obtainedInformationLast;
-        printf("Depth image to point cloud took %i ms,",timer.getTime());
-        grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec+1);
-        //grid->incorporate(x,y,z,d,len,msg->header.stamp.sec);
-        printf("Grid updated %i - information obtained %.0lf\n",timer.getTime(),grid->obtainedInformationLast-lastInfo);
-        //printf("XXX: %i %i %i %i %s %.3f\n",len,cnt,msg->width,msg->height,msg->encoding.c_str(),depth);
-    }
-}
-
 int main(int argc,char *argv[])
 {
     ros::init(argc, argv, "fremengrid");
@@ -679,8 +551,8 @@ int main(int argc,char *argv[])
     ROS_INFO("Fremen grid start");
 
     //Subscribers:
-    ros::Subscriber point_subscriber = n.subscribe<sensor_msgs::PointCloud2> ("/head_xtion/depth/points",  1000, points);
-    image_transport::Subscriber image_subscriber = imageTransporter.subscribe("/head_xtion/depth/image_raw", 1, imageCallback);
+    //ros::Subscriber point_subscriber = n.subscribe<sensor_msgs::PointCloud2> ("/head_xtion/depth/points",  1000, points);
+    image_transport::Subscriber image_subscriber = imageTransporter.subscribe("/head_xtion/depth/image_rect", 1, imageCallback);
     retrieve_publisher = n.advertise<visualization_msgs::Marker>("/fremenGrid/visCells", 100);
     information_publisher  = n.advertise<std_msgs::Float32>("/fremenGrid/obtainedInformation", 100);
 
@@ -697,5 +569,3 @@ int main(int argc,char *argv[])
     ros::spin();
     delete tf_listener;
     delete grid;
-    return 0;
-}
